@@ -140,12 +140,184 @@ namespace TIDStation.Radio
             }
         }
 
+        private static readonly double[] gmrsFreq =
+        [
+            462.5625,
+            462.5875,
+            462.6125,
+            462.6375,
+            462.6625,
+            462.6875,
+            462.7125,
+            467.5625,
+            467.5875,
+            467.6125,
+            467.6375,
+            467.6625,
+            467.6875,
+            467.7125,
+            462.5500,
+            462.5750,
+            462.6000,
+            462.6250,
+            462.6500,
+            462.6750,
+            462.7000,
+            462.7250,
+            467.5500,
+            467.5750,
+            467.6000,
+            467.6250,
+            467.6500,
+            467.6750,
+            467.7000,
+            467.7250
+        ];
+
+        private static readonly double[] noaaFreq =
+        [
+            162.550,
+            162.400,
+            162.475,
+            162.425,
+            162.450,
+            162.500,
+            162.525,
+            161.650,
+            161.775,
+            161.750,
+            162.000,
+            163.275
+        ];
+
         public void SetProperty(string propertyName, string value)
         {
-            PropertyInfo? propInfo = GetType().GetProperty(propertyName);
-            if (propInfo?.PropertyType == typeof(string))
+            double f;
+            switch(propertyName)
             {
-                propInfo.SetValue(this, value);
+                case "Action":
+                    switch (value)
+                    {
+                        case "Clear":
+                            Disable(true);
+                            break;
+                    }
+                    break;
+                case "Presets":
+                    switch (value)
+                    {
+                        case "NOAA":
+                            for (int i = num0, j = 1; i < num0 + 12 && i < 200; i++, j++)
+                            {
+                                Mem[i].Disable(true);
+                                Mem[i].RX = $"{noaaFreq[j - 1]:F5}";
+                                if (j < 10)
+                                    Mem[i].Name = $"NOAA WX{j:D1}";
+                                else
+                                    Mem[i].Name = $"NOAA #{j:D2}";
+                                Mem[i].Power = "Low";
+                            }
+                            break;
+                        case "GMRS":
+                            for (int i = num0, j = 1; i < num0 + 30 && i < 200; i++, j++)
+                            {
+                                Mem[i].Disable(true);
+                                Mem[i].RX = $"{gmrsFreq[j-1]:F5}";
+                                if(j<23) 
+                                    Mem[i].Name = $"GMRS {j:D2}";
+                                else
+                                    Mem[i].Name = $"GMRP {j-8:D2}";
+                            }
+                            break;
+                        case "CHND":
+                            f = 425.225;
+                            for (int i = num0, j = 1; i < num0 + 30 && i < 200; i++, j++)
+                            {
+                                Mem[i].Disable(true);
+                                Mem[i].RX = $"{f:F5}";
+                                double add = j switch
+                                {
+                                    24 => 1.1725,
+                                    5 => 1,
+                                    29 => 0.4725,
+                                    25 => -305.7725,
+                                    17 => 0.3,
+                                    9 => 0.3,
+                                    _ => 1.1,
+                                };
+                                f += add;
+                            }
+                            break;
+                        case "CB CEPT":
+                            f = 26.965;
+                            for (int i = num0, j = 1; i < num0 + 40 && i < 200; i++, j++)
+                            {
+                                Mem[i].Disable(true);
+                                Mem[i].RX = $"{f:F5}";
+                                f += 0.01;
+                                switch(j)
+                                {
+                                    case 23:
+                                        f -= 0.03;
+                                        break;
+                                    case 22:
+                                        f += 0.02;
+                                        break;
+                                    case 25:
+                                    case 19:
+                                    case 15:
+                                    case 11:
+                                    case 7:
+                                    case 3:
+                                        f += 0.01;
+                                        break;
+                                }
+                                Mem[i].Name = $"CB {j:D2}";
+                                Mem[i].Power = "Low";
+                            }
+                            break;
+                        case "CB UK":
+                            f = 27.60125;
+                            for (int i = num0, j = 1; i < num0 + 40 && i < 200; i++, j++)
+                            {
+                                Mem[i].Disable(true);
+                                Mem[i].RX = $"{f:F5}";
+                                f += 0.01;
+                                Mem[i].Name = $"CBUK {j:D2}";
+                                Mem[i].Power = "Low";
+                            }
+                            break;                           
+                        case "PMR446":
+                            f = 446.00625;
+                            for (int i = num0, j = 1; i < num0 + 16 && i < 200; i++, j++)
+                            {
+                                Mem[i].Disable(true);
+                                Mem[i].RX = $"{f:F5}";
+                                f += 0.0125;
+                                Mem[i].Name = $"PMR {j:D2}";
+                                Mem[i].Power = "Low";
+                                switch(j)
+                                {
+                                    case 1: Mem[i].ToneTX = "94.8"; break;
+                                    case 2: Mem[i].ToneTX = "88.5"; break;
+                                    case 3: Mem[i].ToneTX = "103.5"; break;
+                                    case 4: Mem[i].ToneTX = "79.7"; break;
+                                    case 5: Mem[i].ToneTX = "118.8"; break;
+                                    case 6: Mem[i].ToneTX = "123.0"; break;
+                                    case 7: Mem[i].ToneTX = "127.3"; break;
+                                    case 8: Mem[i].ToneTX = "85.4"; break;
+                                }
+                            }
+                            break;
+                    }
+                    break;
+                default:
+                    PropertyInfo? propInfo = GetType().GetProperty(propertyName);
+                    if (propInfo?.PropertyType == typeof(string))
+                    {
+                        propInfo.SetValue(this, value);
+                    }
+                    break;
             }
         }
 
@@ -223,6 +395,9 @@ namespace TIDStation.Radio
             get
             {
                 if (!Enabled) return string.Empty;
+                for (int i = NameAddr + 7; i >= NameAddr; i--)
+                    if (Comms.EEPROM[i] == 0xff)
+                        Comms.EEPROM[i] = 0x00;
                 return Encoding.ASCII.GetString(Comms.EEPROM, NameAddr, 8).Trim('\0');
             }
             set

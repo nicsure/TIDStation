@@ -22,6 +22,12 @@ namespace TIDStation.View
             get => 0;
             set => OnPropertyChanged();
         }
+
+        protected void OnPropertyChanged(PropertyChangedEventArgs args)
+        {
+            (_ = PropertyChanged)?.Invoke(this, args);
+        }
+
         protected void OnPropertyChanged()
         {
             (_ = PropertyChanged)?.Invoke(this, valueArgs);
@@ -143,8 +149,11 @@ namespace TIDStation.View
             get => Comms.GetBcdAt(Address) / 100000.0;
             set
             {
-                Comms.SetBcdAt(Address, (int)Math.Round(value * 100000.0));
-                OnPropertyChanged();
+                if (Value != value)
+                {
+                    Comms.SetBcdAt(Address, (int)Math.Round(value * 100000.0));
+                    OnPropertyChanged();
+                }
             }
         }
 
@@ -212,8 +221,11 @@ namespace TIDStation.View
             get => Comms.GetBcdAt(address, count);
             set
             {
-                Comms.SetBcdAt(address, value, count);
-                OnPropertyChanged();
+                if (Value != value)
+                {
+                    Comms.SetBcdAt(address, value, count);
+                    OnPropertyChanged();
+                }
             }
         }
 
@@ -227,6 +239,7 @@ namespace TIDStation.View
     public class BitModel : ViewModel
     {
         public override object ObjValue { get => Value; set => Value = (bool)value; }
+        private static readonly PropertyChangedEventArgs OpcArgs = new(nameof(Opacity));
 
         public override bool IsDefault => true;
         private readonly int address;
@@ -235,17 +248,25 @@ namespace TIDStation.View
         public int AltAddress { get; set; } = -1;
         public int Address => AltAddress > -1 ? AltAddress : address;
 
+        public double Opacity => Value ? 1.0 : 0.25;
+
         public bool Value
         {
             get => (Comms.EEPROM[Address] & bit) != 0;
             set
             {
-                byte b = Comms.EEPROM[Address];
-                if (value) b |= bit; else b &= ibit;
-                Comms.Write(Address, b);
-                OnPropertyChanged();
+                if (value != Value)
+                {
+                    byte b = Comms.EEPROM[Address];
+                    if (value) b |= bit; else b &= ibit;
+                    Comms.Write(Address, b);
+                    OnPropertyChanged();
+                    OnPropertyChanged(OpcArgs);
+                }
             }
         }
+
+        
 
         public BitModel(int addr, int bit)
         {
@@ -273,10 +294,13 @@ namespace TIDStation.View
             get => (Comms.EEPROM[Address] & mask) >> shift;
             set
             {
-                int b = Comms.EEPROM[Address] & ~mask;
-                b |= ((value << shift) & mask);
-                Comms.Write(Address, (byte)b);
-                OnPropertyChanged();
+                if (value != Value)
+                {
+                    int b = Comms.EEPROM[Address] & ~mask;
+                    b |= ((value << shift) & mask);
+                    Comms.Write(Address, (byte)b);
+                    OnPropertyChanged();
+                }
             }
         }
 
@@ -300,8 +324,11 @@ namespace TIDStation.View
             get => Comms.EEPROM[address];
             set
             {
-                Comms.Write(address, (byte)value);
-                OnPropertyChanged();
+                if (value != Value)
+                {
+                    Comms.Write(address, (byte)value);
+                    OnPropertyChanged();
+                }
             }
         }
 
@@ -384,13 +411,24 @@ namespace TIDStation.View
 
         public string Value
         {
-            get => Encoding.ASCII.GetString(Comms.EEPROM, address, length).Trim('\0');
+            get
+            {
+                for (int i = address + length - 1; i >= address; i--)
+                {
+                    if (Comms.EEPROM[i] == 0xff)
+                        Comms.EEPROM[i] = 0x00;
+                }
+                return Encoding.ASCII.GetString(Comms.EEPROM, address, length).Trim('\0');
+            }
             set
             {
-                byte[] b = new byte[length];
-                Encoding.ASCII.GetBytes(value.Length > length ? value[..length] : value).CopyTo(b, 0);
-                Comms.Write(address, b);
-                OnPropertyChanged();
+                if (!value.Equals(Value))
+                {
+                    byte[] b = new byte[length];
+                    Encoding.ASCII.GetBytes(value.Length > length ? value[..length] : value).CopyTo(b, 0);
+                    Comms.Write(address, b);
+                    OnPropertyChanged();
+                }
             }
         }
     }

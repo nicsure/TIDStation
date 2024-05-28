@@ -8,7 +8,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using TIDStation.Radio;
 using TIDStation.Serial;
 using TIDStation.UI;
@@ -54,7 +56,7 @@ namespace TIDStation.Data
 
         public ViewModel<Channel[]> TestStuff { get; } = new(Channel.Mem);
         public ViewModel<TunerChannel[]> TunerStuff { get; } = new(TunerChannel.Mem);
-        
+
         public ViewModel<double> RadioOpc { get; } = new(1.0);
         public ViewModel<double> ChannelOpc { get; } = new(0.5);
         public ViewModel<double> PowerOpc { get; } = new(0.5);
@@ -116,14 +118,15 @@ namespace TIDStation.Data
         public ViewModel<string> VfoChNumALabel { get; } = new("---");
         public ViewModel<bool> SelectedVfoA { get; } = new(true);
         public ViewModel<double> VfoOpacityA { get; } = new(1.0);
+        public ViewModel<SolidColorBrush> VfoBorderA { get; } = new(new SolidColorBrush(Color.FromArgb(0xff, 0xee, 0xee, 0xee)));
         public ViewModel<string> VfoMarkerA { get; } = new("•");
         public BitModel BusyLockA { get; } = new(0x195d, 2);
-        public ViewModel<string> BusyLockLabelA { get; } = new("B");
+        //public ViewModel<string> BusyLockLabelA { get; } = new("B");
         public BitsModel DiffA { get; } = new(0x195e, 0x3);
         public BitModel ScrambleA { get; } = new(0x195e, 6);
-        public ViewModel<string> ScrambleALabel { get; } = new("S");
+        //public ViewModel<string> ScrambleALabel { get; } = new("S");
         public BitModel ReverseA { get; } = new(0x195e, 7);
-        public ViewModel<string> ReverseALabel { get; } = new("R");
+        //public ViewModel<string> ReverseALabel { get; } = new("R");
 
         public bool AllowEditB
         {
@@ -158,14 +161,15 @@ namespace TIDStation.Data
         public ViewModel<string> VfoChNumBLabel { get; } = new("---");
         public ViewModel<bool> SelectedVfoB { get; } = new(false);
         public ViewModel<double> VfoOpacityB { get; } = new(0.6);
+        public ViewModel<Brush> VfoBorderB { get; } = new(new SolidColorBrush(Color.FromArgb(0xff, 0x55, 0x55, 0x55)));
         public ViewModel<string> VfoMarkerB { get; } = new(string.Empty);
         public BitModel BusyLockB { get; } = new(0x196d, 2);
-        public ViewModel<string> BusyLockLabelB { get; } = new("B");
+        //public ViewModel<string> BusyLockLabelB { get; } = new("B");
         public BitsModel DiffB { get; } = new(0x195e, 0x3);
         public BitModel ScrambleB { get; } = new(0x196e, 6);
-        public ViewModel<string> ScrambleBLabel { get; } = new("S");
+        //public ViewModel<string> ScrambleBLabel { get; } = new("S");
         public BitModel ReverseB { get; } = new(0x196e, 7);
-        public ViewModel<string> ReverseBLabel { get; } = new("R");
+        //public ViewModel<string> ReverseBLabel { get; } = new("R");
 
 
 
@@ -247,8 +251,10 @@ namespace TIDStation.Data
 
         public ViewModel<string> UhfAdjLab { get; } = new("0 Hz");
         public ViewModel<string> VhfAdjLab { get; } = new("0 Hz");
-        public ViewModel<bool> LiveMode { get; } = new(true);
+        public ViewModel<bool> LiveMode { get; } = new(false);
         public ViewModel<double> LiveModeOpacity { get; } = new(1.0);
+        public ViewModel<bool> OfflineMode { get; } = new(true);
+        public ViewModel<double> OfflineModeOpacity { get; } = new(1.0);
         public ToneMenu Tones { get; } = new();
 
         public bool FirstRun { get; set; } = true;
@@ -269,7 +275,21 @@ namespace TIDStation.Data
         public double StepA => Steps(FreqStepA.Value);
         public double StepB => Steps(FreqStepB.Value);
 
-        public static string[] AvailPorts => SerialPort.GetPortNames().Prepend("Offline").ToArray();
+        public static string[] PortsAvailable => SerialPort.GetPortNames();
+        public static string[] AvailPorts => PortsAvailable.Prepend("Offline").ToArray();
+        public static object[] AvailPortsDownload =>
+            PortsAvailable
+            .Select(s => new MenuItem() { Header = s })
+            .Prepend(new MenuItem() { Header = "", IsEnabled = false })
+            .Prepend(new MenuItem() { Header = "Read from Radio", IsEnabled = false })
+            .ToArray();
+
+        public static object[] AvailPortsUpload =>
+            PortsAvailable
+            .Select(s => new MenuItem() { Header = s })
+            .Prepend(new MenuItem() { Header = "", IsEnabled = false })
+            .Prepend(new MenuItem() { Header = "Write to Radio", IsEnabled = false })
+            .ToArray();
 
         private void SetSplitDir(bool A)
         {
@@ -358,17 +378,17 @@ namespace TIDStation.Data
             ToneTxA.PropertyChanged += (s, e) => { if (Ready) TD.Update(); };
             BusyLockA.PropertyChanged += (s, e) =>
             {
-                BusyLockLabelA.Value = BusyLockA.Value ? "B" : "-";
+                //BusyLockLabelA.Value = BusyLockA.Value ? "B" : "-";
                 if (Ready) TD.Update();
             };
             ScrambleA.PropertyChanged += (s, e) =>
             {
-                ScrambleALabel.Value = ScrambleA.Value ? "S" : "-";
+                //ScrambleALabel.Value = ScrambleA.Value ? "S" : "-";
                 if (Ready) TD.Update();
             };
             ReverseA.PropertyChanged += (s, e) =>
             {
-                ReverseALabel.Value = ReverseA.Value ? "R" : "-";
+                //ReverseALabel.Value = ReverseA.Value ? "R" : "-";
                 VfoRxA = ReverseA.Value ? vfoTxA : vfoRxA;
                 VfoTxA = ReverseA.Value ? vfoRxA : vfoTxA;
                 OnPropertyChanged(nameof(VfoRxA));
@@ -458,17 +478,17 @@ namespace TIDStation.Data
             ToneTxB.PropertyChanged += (s, e) => { if (Ready) TD.Update(); };
             BusyLockB.PropertyChanged += (s, e) =>
             {
-                BusyLockLabelB.Value = BusyLockB.Value ? "B" : "-";
+                //BusyLockLabelB.Value = BusyLockB.Value ? "B" : "-";
                 if (Ready) TD.Update();
             };
             ScrambleB.PropertyChanged += (s, e) =>
             {
-                ScrambleBLabel.Value = ScrambleB.Value ? "S" : "-";
+                //ScrambleBLabel.Value = ScrambleB.Value ? "S" : "-";
                 if (Ready) TD.Update();
             };
             ReverseB.PropertyChanged += (s, e) =>
             {
-                ReverseBLabel.Value = ReverseB.Value ? "R" : "-";
+                //ReverseBLabel.Value = ReverseB.Value ? "R" : "-";
                 VfoRxB = ReverseB.Value ? vfoTxB : vfoRxB;
                 VfoTxB = ReverseB.Value ? vfoRxB : vfoTxB;
                 OnPropertyChanged(nameof(VfoRxB));
@@ -507,12 +527,56 @@ namespace TIDStation.Data
                 VfoOpacityB.Value = SelectedVfoB.Value ? 1.0 : 0.75;
                 VfoMarkerA.Value = SelectedVfoA.Value ? "•" : string.Empty;
                 VfoMarkerB.Value = SelectedVfoB.Value ? "•" : string.Empty;
+                VfoBorderA.Value = SelectedVfoA.Value ? new SolidColorBrush(Color.FromArgb(0xff, 0xee, 0xee, 0xee)) : new SolidColorBrush(Color.FromArgb(0xff, 0x55, 0x55, 0x55));
+                VfoBorderB.Value = SelectedVfoB.Value ? new SolidColorBrush(Color.FromArgb(0xff, 0xee, 0xee, 0xee)) : new SolidColorBrush(Color.FromArgb(0xff, 0x55, 0x55, 0x55));
                 if (Ready)
                     TD.Update();
             };
-            LiveMode.PropertyChanged += (s, e) => LiveModeOpacity.Value = LiveMode.Value ? 1.0 : 0.5;
+            LiveMode.PropertyChanged += (s, e) =>
+            {
+                LiveModeOpacity.Value = LiveMode.Value ? 1.0 : 0.5;
+                OfflineMode.Value = !LiveMode.Value;
+                OfflineModeOpacity.Value = LiveMode.Value ? 0.5 : 1.0;
+            };
             ComPort.PropertyChanged += (s, e) => SetComPort();
+        }
 
+
+        private const string zero7 = "0000000";
+        private const string zero8 = "00000000";
+        private const string zero16 = "0000000000000000";
+        public void CleanDTMF()
+        {
+            if
+            (
+               PttIdStart.Value.Equals(zero7) &&
+               PttIdEnd.Value.Equals(zero7) &&
+               HaloCode.Value.Equals(zero8) &&
+               KillCode.Value.Equals(zero8) &&
+               CallCode1.Value.Equals(zero16) &&
+               CallCode2.Value.Equals(zero16) &&
+               CallCode3.Value.Equals(zero16) &&
+               CallCode4.Value.Equals(zero16) &&
+               CallCode5.Value.Equals(zero16) &&
+               CallCode6.Value.Equals(zero16) &&
+               CallCode7.Value.Equals(zero16) &&
+               CallCode8.Value.Equals(zero16)
+            )
+            {
+                PttIdStart.Value =
+                PttIdEnd.Value =
+                HaloCode.Value =
+                KillCode.Value =
+                CallCode1.Value =
+                CallCode2.Value =
+                CallCode3.Value =
+                CallCode4.Value =
+                CallCode5.Value =
+                CallCode6.Value =
+                CallCode7.Value =
+                CallCode8.Value =
+                    string.Empty;
+            }
         }
 
         private void ApplyChannelA(int num)
@@ -619,16 +683,20 @@ namespace TIDStation.Data
             UiReady.Value = false;
             Comms.SetPort(ComPort.Value, ok => 
             {
-                if(ok)
+                if (ok)
                 {
+                    LiveMode.Value = true;
                     SyncToRadio();
                 }
+                else
+                    LiveMode.Value = false;
                 UiReady.Value = true;
             });
         }
 
         public void SyncToRadio()
         {
+            CleanDTMF();
             SplitTxA.Value = VfoRxA.Value != VfoTxA.Value;
             VfoRxA.ForceUpdate++;
             VfoTxA.ForceUpdate++;

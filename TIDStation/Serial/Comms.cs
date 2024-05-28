@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,7 +25,7 @@ namespace TIDStation.Serial
         private static byte checkSum = 0;
         private static bool checkSumOK;
         private static readonly byte[] radioId = new byte[7];
-        private static readonly byte[] eeprom = new byte[8192];
+        private static readonly byte[] eeprom;
         private static readonly byte[] compId = [0x50, 0x56, 0x4F, 0x4A, 0x48, 0x5C, 0x14];
         private static readonly byte[] radioIdReq = [0x02];
         private static readonly byte[] endSeq = [0x45];
@@ -41,14 +42,15 @@ namespace TIDStation.Serial
 
         static Comms()
         {
-            eeprom[0x1958] = 0xff;
-            eeprom[0x1959] = 0xff;
-            eeprom[0x195a] = 0xff;
-            eeprom[0x195b] = 0xff;
-            eeprom[0x1968] = 0xff;
-            eeprom[0x1969] = 0xff;
-            eeprom[0x196a] = 0xff;
-            eeprom[0x196b] = 0xff;
+            var assembly = Assembly.GetExecutingAssembly();
+            using var stream = assembly.GetManifestResourceStream("TIDStation.Resources.BLANK.BIN");
+            if (stream == null)
+            {
+                throw new Exception($"Resource BLANK.BIN not found.");
+            }
+            using var memoryStream = new MemoryStream();
+            stream.CopyTo(memoryStream);
+            eeprom = memoryStream.ToArray();
         }
 
         public static int GetDcsAt(int addr)
@@ -110,11 +112,20 @@ namespace TIDStation.Serial
             PreCommit(addr, 4);
         }
 
-        public static void SetPort(string portName, Action<bool> finished)
+        private static ProgressBar? rwProgress = null;
+
+        public static void SetPort(string portName, Action<bool> finished, ProgressBar? pb = null)
         {
+            rwProgress = pb;
+            int pos = 1;
+            if (portName.StartsWith('!'))
+            {
+                portName = portName[1..];
+                pos = -1;
+            }
             if (int.TryParse(portName.Replace("COM", string.Empty), out int i))
             {
-                Tasks.Watch = SetPort(i, finished);
+                Tasks.Watch = SetPort(i * pos, finished);
             }
             else
             {
@@ -126,55 +137,59 @@ namespace TIDStation.Serial
 
         public static async Task SetPort(int portNumber, Action<bool> finished)
         {
-            Context.Instance.FlashComPort.Value = $"COM{portNumber}";
-            if (!Context.Instance.FirstRun && (cstart <= 0x2000 || cend > -1))
-            {
-                var res = MessageBox.Show("Connecting to a radio will overwrite the current configuration\rwith the configuration of the radio you are connecting to\r\rAre you sure?", "Confirmation", MessageBoxButton.OKCancel);
-                if (res.Equals(MessageBoxResult.Cancel))
-                {
-                    finished(false);
-                    return;
-                }
-            }
+            Context.Instance.FlashComPort.Value = $"COM{Math.Abs(portNumber)}";
             using Task<bool> task = Task<bool>.Run(() =>
             {
-                lock(sync2) lock (sync)
+                lock (sync2)
                 {
-                    port?.Close();                        
-                    port = null;
-                    ComPort temp = new(portNumber, 38400, Parity.None, 8, StopBits.One, Received);
-                    if (temp.Active)
+                    lock (sync)
                     {
-                        for (; true;)
+                        port?.Close();
+                        port = null;
+                        ComPort temp = new(Math.Abs(portNumber), 38400, Parity.None, 8, StopBits.One, Received);
+                        if (temp.Active)
                         {
-                            checkSumOK = true;
-                            temp.Send(compId);
-                            if (!sync.Wait()) break;
-                            temp.Send(radioIdReq);
-                            if (!sync.Wait()) break;
-                            temp.Send(okayAck);
-                            if (!sync.Wait()) break;
-                            for (int addr = 0; addr < 0x2000; addr += 0x20)
+                            if (portNumber < 0)
                             {
-                                addr.Write16BE(readReq, 1);
-                                temp.Send(readReq);
-                                if (!sync.Wait()) break;
+                                port = temp;
+                                return true;
                             }
-                            temp.Send(endSeq);
-                            if (!sync.Wait()) break;
-                            temp.Send(radioIdReq);
-                            if (!sync.Wait()) break;
-                            if (!checkSumOK) break;
-                            cstart = 0x2001;
-                            cend = -1;
-                            port = temp;
-                            Context.Instance.FirstRun = false;
-                            return true;
+                            for (; true;)
+                            {
+                                checkSumOK = true;
+                                temp.Send(compId);
+                                if (!sync.Wait()) break;
+                                temp.Send(radioIdReq);
+                                if (!sync.Wait()) break;
+                                temp.Send(okayAck);
+                                if (!sync.Wait()) break;
+                                for (int addr = 0; addr < 0x2000; addr += 0x20)
+                                {
+                                    if (rwProgress != null)
+                                    {
+                                        double pg = (addr / 8912.0) * 100.0;
+                                        rwProgress.Dispatcher.Invoke(() => rwProgress.Value = pg);
+                                    }
+                                    addr.Write16BE(readReq, 1);
+                                    temp.Send(readReq);
+                                    if (!sync.Wait()) break;
+                                }
+                                temp.Send(endSeq);
+                                if (!sync.Wait()) break;
+                                temp.Send(radioIdReq);
+                                if (!sync.Wait()) break;
+                                if (!checkSumOK) break;
+                                cstart = 0x2001;
+                                cend = -1;
+                                port = temp;
+                                Context.Instance.FirstRun = false;
+                                return true;
+                            }
                         }
+                        temp.Close();
+                        Context.Instance.ComPort.Value = "Offline";
+                        return false;
                     }
-                    temp.Close();
-                    Context.Instance.ComPort.Value = "Offline";
-                    return false;
                 }
             });
             finished(await task);
@@ -221,28 +236,36 @@ namespace TIDStation.Serial
                 cend = -1;
                 using Task task = Task.Run(() =>
                 {
-                    lock(sync2) lock (sync)
+                    lock (sync2)
                     {
-                        port.Send(compId);
-                        if (!sync.Wait()) return;
-                        port.Send(radioIdReq);
-                        if (!sync.Wait()) return;
-                        port.Send(okayAck);
-                        if (!sync.Wait()) return;
-                        for (int j = start; j < end; j += 0x20)
+                        lock (sync)
                         {
-                            j.Write16BE(writePkt, 1);
-                            Array.Copy(eeprom, j, writePkt, 4, 0x20);
-                            writePkt[0x24] = 0;
-                            for (int i = 4; i < 0x24; i++)
-                                writePkt[0x24] += writePkt[i];
-                            port.Send(writePkt);
+                            port.Send(compId);
+                            if (!sync.Wait()) return;
+                            port.Send(radioIdReq);
+                            if (!sync.Wait()) return;
+                            port.Send(okayAck);
+                            if (!sync.Wait()) return;
+                            for (int j = start; j < end; j += 0x20)
+                            {
+                                if (rwProgress != null)
+                                {
+                                    double pg = (j / (double)end) * 100.0;
+                                    rwProgress.Dispatcher.Invoke(() => rwProgress.Value = pg); 
+                                }
+                                j.Write16BE(writePkt, 1);
+                                Array.Copy(eeprom, j, writePkt, 4, 0x20);
+                                writePkt[0x24] = 0;
+                                for (int i = 4; i < 0x24; i++)
+                                    writePkt[0x24] += writePkt[i];
+                                port.Send(writePkt);
+                                if (!sync.Wait()) return;
+                            }
+                            port.Send(endSeq);
+                            if (!sync.Wait()) return;
+                            port.Send(radioIdReq);
                             if (!sync.Wait()) return;
                         }
-                        port.Send(endSeq);
-                        if (!sync.Wait()) return;
-                        port.Send(radioIdReq);
-                        if (!sync.Wait()) return;
                     }
                 });
                 await task;

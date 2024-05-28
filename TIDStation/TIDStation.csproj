@@ -11,11 +11,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\BLANK.BIN" />
     <None Remove="tidlogo.png" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="TID.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\BLANK.BIN" />
   </ItemGroup>
 
   <ItemGroup>

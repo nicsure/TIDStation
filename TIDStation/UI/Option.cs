@@ -151,6 +151,11 @@ namespace TIDStation.UI
         {
             if(d is Option opt && e.NewValue is string options)
             {
+                if(opt.Tag is string head)
+                {
+                    opt.cMenu.Items.Add(new MenuItem() { Header = head, IsEnabled = false });
+                    opt.cMenu.Items.Add(new Separator());
+                }
                 if(options.StartsWith("input"))
                 {                    
                     TextBox tb = new()

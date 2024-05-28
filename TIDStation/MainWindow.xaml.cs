@@ -41,7 +41,8 @@ namespace TIDStation
             MainBorder.IsEnabledChanged += MainWindow_IsEnabledChanged;
             Context.Instance.KeyPad.PropertyChanged += KeyPad_PropertyChanged;
             Frequency.Default = VfoRxA;
-            Frequency.Current = VfoRxA;            
+            Frequency.Current = VfoRxA;
+            Context.Instance.SyncToRadio();
         }
 
         private void KeyPad_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -65,12 +66,14 @@ namespace TIDStation
         {
             OnMouseLeftButtonDown(e);
         }
-        protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+        protected override void OnMouseLeftButtonDown(MouseButtonEventArgs? e)
         {
-            base.OnMouseLeftButtonDown(e);
-            if (Mouse.DirectlyOver is Grid || Mouse.DirectlyOver is Border)
-                DragMove();
-            else
+            if (e != null)
+            {
+                base.OnMouseLeftButtonDown(e);
+                if (Mouse.DirectlyOver is Grid || Mouse.DirectlyOver is Border)
+                    DragMove();
+            }
             if (Mouse.DirectlyOver is FrameworkElement fe)
             {
                 if (!Context.Instance.UiReady.Value) return;
@@ -78,7 +81,7 @@ namespace TIDStation
                 {
                     if (fe.ContextMenu is ContextMenu cm)
                     {
-                        e.Handled = true;
+                        if(e!=null) e.Handled = true;
                         cm.PlacementTarget = fe;
                         cm.IsOpen = true;
                         break;
@@ -534,7 +537,18 @@ namespace TIDStation
                     {
                         if (item is Channel channel)
                             channel.SetProperty(key, val);
+                        if (key.Equals("Presets"))
+                            break;
                     }
+                }
+                else
+                {
+                    foreach (var item in ChannelGrid.SelectedItems)
+                    {
+                        if (item is Channel channel)
+                            channel.SetProperty("Action", val);
+                    }
+
                 }
             }
         }
@@ -562,6 +576,52 @@ namespace TIDStation
         private void ReverseBLab_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             Context.Instance.ReverseB.Value = !Context.Instance.ReverseB.Value;
+        }
+
+        private void RadioDown_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                Context.Instance.UiReady.Value = false;
+                Comms.SetPort((string)mi.Header, b => 
+                {
+                    if (b)
+                    {
+                        Comms.SetPort("Offline", _ => { });
+                        Context.Instance.SyncToRadio();
+                        RadioRWPBar.Value = 0;
+                    }
+                    Context.Instance.UiReady.Value = true;
+                }, RadioRWPBar);
+            }
+        }
+
+        private void RadioUp_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+            {
+                Context.Instance.UiReady.Value = false;
+                Comms.SetPort("!" + (string)mi.Header, async b =>
+                {
+                    if (b)
+                    {
+                        Comms.PreCommit(0, 0x2000);
+                        Context.Instance.LiveMode.Value = true;
+                        await Comms.Commit();
+                        RadioRWPBar.Value = 0;
+                        Context.Instance.LiveMode.Value = false;
+                        Comms.SetPort("Offline", _ => { });
+                        Context.Instance.UiReady.Value = true;
+                    }
+                    else
+                        Context.Instance.UiReady.Value = true;
+                }, RadioRWPBar);
+            }
+        }
+
+        private void ScrollViewer_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            OnMouseLeftButtonDown(null);
         }
     }
 }
