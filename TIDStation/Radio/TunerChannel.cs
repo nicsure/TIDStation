@@ -12,7 +12,10 @@ namespace TIDStation.Radio
     public class TunerChannel : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged(string name) => (_ = PropertyChanged)?.Invoke(this, new PropertyChangedEventArgs(name));
+        protected void OnPropertyChanged(string name)
+        {
+            (_ = PropertyChanged)?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
 
         public static TunerChannel[] Mem { get; } = Enumerable.Range(1, 25).Select(i => new TunerChannel(i)).ToArray();
 
@@ -21,7 +24,9 @@ namespace TIDStation.Radio
         private int EnabledBit => 1 << (num0 % 8);
 
         public int Number => num;
-        private int num, num0;
+
+        private readonly int num;
+        private readonly int num0;
         private readonly int addr;
 
         private bool Enabled
@@ -32,7 +37,9 @@ namespace TIDStation.Radio
                 Comms.EEPROM[EnabledAddr] &= (byte)~EnabledBit;
                 Comms.Write(EnabledAddr, (byte)(EnabledByte | (value ? EnabledBit : 0)));
                 OnPropertyChanged(nameof(Enabled));
+                TD.Update();
                 OnPropertyChanged(nameof(Frequency));
+                TD.Update();
             }
         }
 
@@ -47,16 +54,19 @@ namespace TIDStation.Radio
         {
             get 
             {
-                int r = Enabled ? Comms.GetBcdAt(addr) : -1;
-                return r > 0 ? $"{r / 100000.0:F5}" : string.Empty;
+                int r = Enabled ? Comms.GetBcdAt(addr, 2) : -1;
+                return r > 0 ? $"{r / 10.0:F1}" : string.Empty;
             }
             set
             {
                 if (double.TryParse(value, out double d))
                 {
-                    int i = (int)Math.Round(d * 100000.0);
-                    i = i.Clamp(8800000, 10800000);
-                    Comms.SetBcdAt(addr, i);
+                    int i = (int)Math.Round(d * 10.0);
+                    i = i.Clamp(760, 1080);
+                    Comms.SetBcdAt(addr, i, 2);
+                    Comms.EEPROM[addr + 2] = 0;
+                    Comms.EEPROM[addr + 3] = 0;
+                    Comms.PreCommit(addr, 4);
                     Enabled = true;
                 }
                 else
@@ -68,7 +78,9 @@ namespace TIDStation.Radio
                     Enabled = false;
                 }
                 OnPropertyChanged(nameof(Frequency));
+                TD.Update();
                 OnPropertyChanged(nameof(Enabled));
+                TD.Update();
             }
         }
     }

@@ -365,9 +365,11 @@ namespace TIDStation.Radio
                 else
                 {
                     Enable(true, value);
-                    int def = Comms.GetBcdAt(addr);
-                    if (def < 18000000 || def > 66000000) def = 14400000;
-                    Comms.SetBcdAt(addr, FreqInt(value, def));
+                    int tx = Comms.GetBcdAt(addr + 4);
+                    int rx = FreqInt(value, Comms.GetBcdAt(addr));
+                    if (rx < 18000000 || rx > 66000000) rx = 14400000;
+                    Comms.SetBcdAt(addr, rx);
+                    Differential = Math.Sign(tx - rx);
                 }
                 OnPropertyChanged(nameof(RX));
             }
@@ -384,6 +386,7 @@ namespace TIDStation.Radio
             {
                 int rx = Comms.GetBcdAt(addr);
                 int tx = FreqInt(value, Comms.GetBcdAt(addr + 4));
+                if (tx < 18000000 || tx > 66000000) tx = 14400000;
                 Comms.SetBcdAt(addr + 4, tx);
                 Differential = Math.Sign(tx - rx);
                 OnPropertyChanged(nameof(TX));

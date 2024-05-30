@@ -395,6 +395,11 @@ namespace TIDStation
             FixDataDrid();
         }
 
+        private void PowerReset_Click(object sender, RoutedEventArgs e)
+        {
+            Context.Instance.ResetPowerLevels();
+        }
+
         private void PowerRevert_Click(object sender, RoutedEventArgs e)
         {
             Context.Instance.ReadPowerLevels();

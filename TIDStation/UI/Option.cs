@@ -84,6 +84,7 @@ namespace TIDStation.UI
                     Model.ObjValue = bool.TryParse(tb.Text, out bool b) ? b : Model.ObjValue;
                     break;
             }
+            TD.Update();
         }
 
         private void Mi_Click(object sender, RoutedEventArgs e)
@@ -147,6 +148,56 @@ namespace TIDStation.UI
         }
         public static readonly DependencyProperty OptionsProperty =
             DependencyProperty.Register("Options", typeof(string), typeof(Option), new PropertyMetadata(string.Empty, OnOptionsChanged));
+
+        private static readonly List<char> allowedNum = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        private static readonly List<char> allowedFlt = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.'];
+        private static readonly List<char> allowedHex = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'a', 'b', 'c', 'd', 'e', 'f'];
+        private static readonly List<char> allowedDtmf = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'a', 'b', 'c', 'd', '*', '#'];
+
+        private static void PruneTextBox(TextBox tbox, List<char>? allowed, bool poundToHash = false, bool commaToDot = false)
+        {
+            if (tbox == null)
+                throw new ArgumentNullException(nameof(tbox), "TextBox reference is null (shouldn't happen, please report)");
+            if (allowed == null)
+                return; // allow all characters
+            if (!tbox.Dispatcher.CheckAccess())
+            {
+                tbox.Dispatcher.Invoke(() => { PruneTextBox(tbox, allowed, poundToHash, commaToDot); });
+                return;
+            }
+            if (tbox.Tag == tbox) // prevent recursion
+                return;
+            object? oldTag = tbox.Tag;
+            tbox.Tag = tbox;
+            try
+            {
+                var builder = new StringBuilder(tbox.Text.Length);
+                foreach (char c in tbox.Text)
+                {
+                    char c1;
+                    if (poundToHash && c == '£') c1 = '#';
+                    else
+                    if (commaToDot && c == ',') c1 = '.';
+                    else
+                        c1 = c;
+                    if (allowed.Contains(c1))
+                        builder.Append(c1);
+                }
+                string repl = builder.ToString();
+                if (!tbox.Text.Equals(repl))
+                {
+                    tbox.Text = repl;
+                    tbox.SelectionStart = repl.Length;
+                    tbox.SelectionLength = 0;
+                }
+            }
+            finally
+            {
+                tbox.Tag = oldTag;
+            }
+        }
+
+
         private static void OnOptionsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if(d is Option opt && e.NewValue is string options)
@@ -156,14 +207,19 @@ namespace TIDStation.UI
                     opt.cMenu.Items.Add(new MenuItem() { Header = head, IsEnabled = false });
                     opt.cMenu.Items.Add(new Separator());
                 }
-                if(options.StartsWith("input"))
-                {                    
+                int style = options.StartsWith("input") ? 1 : 
+                            options.StartsWith("numbi") ? 2 :
+                            options.StartsWith("numbf") ? 3 :
+                            options.StartsWith("dtmfi") ? 4 :
+                            options.StartsWith("hexad") ? 5 : 0;
+                if (style > 0)
+                {
                     TextBox tb = new()
                     {
                         Width = 200
                     };
-                    if (int.TryParse(options[5..], out int max))
-                        tb.MaxLength = Math.Abs(max);
+                    string[] p = options[5..].Split(',');
+                    _ = int.TryParse(p[0], out int leng) ? tb.MaxLength = leng : 0;
                     opt.cMenu.Items.Add(tb);
                     tb.KeyDown += (s, e) =>
                     {
@@ -173,51 +229,23 @@ namespace TIDStation.UI
                             opt.Tb_Enter((TextBox)s);
                             opt.cMenu.IsOpen = false;
                         }
-                        if (max < 0)
+                    };
+                    tb.TextChanged += (s, e) =>
+                    {
+                        switch (style)
                         {
-                            switch(Keyboard.Modifiers)
-                            {
-                                case ModifierKeys.Shift:
-                                    switch (e.Key)
-                                    {
-                                        case >= Key.A and <= Key.D: break;
-                                        case Key.D8: break;
-                                        case Key.D3: break;
-                                        default: e.Handled = true; break;
-                                    }
-                                    break;
-                                case ModifierKeys.None:
-                                    switch (e.Key)
-                                    {
-                                        case >= Key.A and <= Key.D: break;
-                                        case >= Key.D0 and <= Key.D9: break;
-                                        case >= Key.NumPad0 and <= Key.NumPad9: break;
-                                        case Key.Back: break;
-                                        case Key.Delete: break;
-                                        case Key.Left: break;
-                                        case Key.Right: break;
-                                        case Key.Multiply: break;
-                                        case Key.Oem7: break;
-                                        default: e.Handled = true; break;
-                                    }
-                                    break;
-                                default: e.Handled = true; break;
-                            }
-
-
-                            switch (e.Key)
-                            {
-                                case >= Key.A and <= Key.D: break;
-                                case >= Key.D0 and <= Key.D9: break;
-                                case >= Key.NumPad0 and <= Key.NumPad9: break;
-                                case Key.Back: break;
-                                case Key.Delete: break;
-                                case Key.Left: break;
-                                case Key.Right: break;
-                                case Key.Multiply: break;
-                                case Key.Oem7: break;
-                                default: e.Handled = true; break;
-                            }
+                            case 2: 
+                                PruneTextBox(tb, allowedNum); 
+                                break;
+                            case 3: 
+                                PruneTextBox(tb, allowedFlt, false, true);
+                                break;
+                            case 4: 
+                                PruneTextBox(tb, allowedDtmf, true);
+                                break;
+                            case 5: 
+                                PruneTextBox(tb, allowedHex);
+                                break;
                         }
                     };
                 }

@@ -248,6 +248,11 @@ namespace TIDStation.Data
         public BitModel TunerMode { get; } = new(0x0ca2, 7);
         public BitModel ForbidRec { get; } = new(0x0ca2, 3);
         public BitsModel TunerChan { get; } = new(0x0ca6, 0x1f);
+        public BcdrModel VhfLow { get; } = new(0x0cc0, 18.0, 350.0, 136.0, 174.0);
+        public BcdrModel VhfHigh { get; } = new(0x0cc2, 18.0, 350.0, 136.0, 174.0);
+        public BcdrModel UhfLow { get; } = new(0x0cc4, 350.0, 660.0, 400.0, 480.0);
+        public BcdrModel UhfHigh { get; } = new(0x0cc6, 350.0, 660.0, 400.0, 480.0);
+        public BcdfModel FmVfoFreq { get; } = new(0x1970, 76.0, 108.0);
 
         public ViewModel<string> UhfAdjLab { get; } = new("0 Hz");
         public ViewModel<string> VhfAdjLab { get; } = new("0 Hz");
@@ -786,11 +791,26 @@ namespace TIDStation.Data
             TunerMode.ForceUpdate++;
             ForbidRec.ForceUpdate++;
             TunerChan.ForceUpdate++;
+            VhfLow.ForceUpdate++;
+            VhfHigh.ForceUpdate++;
+            UhfLow.ForceUpdate++;
+            UhfHigh.ForceUpdate++;
+            FmVfoFreq.ForceUpdate++;
             TunerStuff.Value = [];
             TunerStuff.Value = TunerChannel.Mem;
             TestStuff.Value = [];
             TestStuff.Value = Channel.Mem;
             ReadPowerLevels();
+        }
+
+        public void ResetPowerLevels()
+        {
+            for (int i = 0x1f50, k = 0; i < 0x1f7e; i++)
+            {
+                if (i == 0x1f6e) { i = 0x1f70; k++; }
+                Comms.Write(i, Comms.BlankEEPROM[i]);
+            }
+            SyncToRadio();
         }
 
         public void ReadPowerLevels()

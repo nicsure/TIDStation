@@ -110,7 +110,7 @@
                 <Label x:Name="TunerMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding TunerOpc.Value}" Grid.Row="0" Grid.Column="3" Content="📻" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label x:Name="FlashMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding FlashOpc.Value}" Grid.Column="4" Content="⚡" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label IsHitTestVisible="False" HorizontalContentAlignment="Right" Grid.Column="5" FontWeight="Bold" Content="TID Station" FontSize="{Binding FontSize.Value[4]}"/>
-                <Label IsHitTestVisible="False" HorizontalContentAlignment="Left" Grid.Column="7" FontWeight="Normal" Content="v0.29b nicsure 2024" FontSize="{Binding FontSize.Value[3.5]}"/>
+                <Label IsHitTestVisible="False" HorizontalContentAlignment="Left" Grid.Column="7" FontWeight="Normal" Content="v0.31b nicsure 2024" FontSize="{Binding FontSize.Value[3.5]}"/>
                 <Label x:Name="MinimizeButton" MouseLeftButtonDown="MinimizeButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="10" Content="─" FontSize="{Binding FontSize.Value[6]}"/>
                 <Label x:Name="MaximizeButton" MouseLeftButtonDown="MaximizeButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="11" Content="▢" FontSize="{Binding FontSize.Value[5]}"/>
                 <Label x:Name="CloseButton" MouseLeftButtonDown="CloseButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="12" Content="❌" FontSize="{Binding FontSize.Value[4]}"/>
@@ -479,6 +479,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition/>
                             </Grid.RowDefinitions>
 
@@ -594,7 +595,7 @@
                             <ui:Option Tag="Auto Answer" Grid.Column="1" Grid.Row="37" Model="{Binding AutoAnswer}" Type="int" Options="Disabled;0, Ring;1, Callback;2, Both;3" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="38" Content="Self ID" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="Self ID" Grid.Column="1" Grid.Row="38" Model="{Binding SelfId}" Type="string" Options="input-3" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Self ID" Grid.Column="1" Grid.Row="38" Model="{Binding SelfId}" Type="string" Options="dtmfi3" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="39" Content="Group Code" FontSize="{Binding FontSize.Value[4]}" />
                             <ui:Option Tag="Group Code" Grid.Column="1" Grid.Row="39" Model="{Binding GroupCode}" Type="string" Options="Off;,A,B,C,D,*,#" FontSize="{Binding FontSize.Value[4]}" />
@@ -603,40 +604,42 @@
                             <ui:Option Tag="DTMF Sidetone" Grid.Column="1" Grid.Row="40" Model="{Binding DtmfSidetone}" Type="bool" Options="Disabled;False, Enabled;True" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="41" Content="PTT-ID Start" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="PTT-ID on Start" Grid.Column="1" Grid.Row="41" Model="{Binding PttIdStart}" Type="string" Options="input-7" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="PTT-ID on Start" Grid.Column="1" Grid.Row="41" Model="{Binding PttIdStart}" Type="string" Options="dtmfi7" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="42" Content="PTT-ID End" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="PTT-ID on End" Grid.Column="1" Grid.Row="42" Model="{Binding PttIdEnd}" Type="string" Options="input-7" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="PTT-ID on End" Grid.Column="1" Grid.Row="42" Model="{Binding PttIdEnd}" Type="string" Options="dtmfi7" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="43" Content="HALO Code" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="Stun/HALO Code"  Grid.Column="1" Grid.Row="43" Model="{Binding HaloCode}" Type="string" Options="input-8" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Stun/HALO Code"  Grid.Column="1" Grid.Row="43" Model="{Binding HaloCode}" Type="string" Options="dtmfi8" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="44" Content="Kill Code" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="Kill Code" Grid.Column="1" Grid.Row="44" Model="{Binding KillCode}" Type="string" Options="input-8" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Kill Code" Grid.Column="1" Grid.Row="44" Model="{Binding KillCode}" Type="string" Options="dtmfi8" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="45" Content="Call Code 1" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="Call Code 1" Grid.Column="1" Grid.Row="45" Model="{Binding CallCode1}" Type="string" Options="input-16" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Call Code 1" Grid.Column="1" Grid.Row="45" Model="{Binding CallCode1}" Type="string" Options="dtmfi16" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="45" Content="Call Code 2" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="Call Code 2" Grid.Column="1" Grid.Row="45" Model="{Binding CallCode2}" Type="string" Options="input-16" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Call Code 2" Grid.Column="1" Grid.Row="45" Model="{Binding CallCode2}" Type="string" Options="dtmfi16" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="46" Content="Call Code 3" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="Call Code 3" Grid.Column="1" Grid.Row="46" Model="{Binding CallCode3}" Type="string" Options="input-16" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Call Code 3" Grid.Column="1" Grid.Row="46" Model="{Binding CallCode3}" Type="string" Options="dtmfi16" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="47" Content="Call Code 4" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="Call Code 4" Grid.Column="1" Grid.Row="47" Model="{Binding CallCode4}" Type="string" Options="input-16" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Call Code 4" Grid.Column="1" Grid.Row="47" Model="{Binding CallCode4}" Type="string" Options="dtmfi16" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="48" Content="Call Code 5" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="Call Code 5" Grid.Column="1" Grid.Row="48" Model="{Binding CallCode5}" Type="string" Options="input-16" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Call Code 5" Grid.Column="1" Grid.Row="48" Model="{Binding CallCode5}" Type="string" Options="dtmfi16" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="49" Content="Call Code 6" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="Call Code 6" Grid.Column="1" Grid.Row="49" Model="{Binding CallCode6}" Type="string" Options="input-16" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Call Code 6" Grid.Column="1" Grid.Row="49" Model="{Binding CallCode6}" Type="string" Options="dtmfi16" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="50" Content="Call Code 7" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="Call Code 7" Grid.Column="1" Grid.Row="50" Model="{Binding CallCode7}" Type="string" Options="input-16" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Call Code 7" Grid.Column="1" Grid.Row="50" Model="{Binding CallCode7}" Type="string" Options="dtmfi16" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="51" Content="Call Code 8" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="Call Code 8" Grid.Column="1" Grid.Row="51" Model="{Binding CallCode8}" Type="string" Options="input-16" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Call Code 8" Grid.Column="1" Grid.Row="51" Model="{Binding CallCode8}" Type="string" Options="dtmfi16" FontSize="{Binding FontSize.Value[4]}" />
+                             
+                                
 
 
 
@@ -652,6 +655,19 @@
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="56" Content="500 TX" FontSize="{Binding FontSize.Value[4]}" />
                             <ui:Option Tag="Allow TX on 500Mhz Band" Grid.Column="1" Grid.Row="56" Model="{Binding Tx500}" Type="bool" Options="No;False, Yes;True" FontSize="{Binding FontSize.Value[4]}" />
+
+                            <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="57" Content="VHF From" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Bottom of VHF Band (MHz)" Grid.Column="1" Grid.Row="57" Model="{Binding VhfLow}" Type="string" Options="numbf5" FontSize="{Binding FontSize.Value[4]}" />
+
+                            <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="58" Content="VHF To" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Top of VHF Band (MHz)" Grid.Column="1" Grid.Row="58" Model="{Binding VhfHigh}" Type="string" Options="numbf5" FontSize="{Binding FontSize.Value[4]}" />
+
+                            <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="59" Content="UHF From" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Bottom of UHF Band (MHz)" Grid.Column="1" Grid.Row="59" Model="{Binding UhfLow}" Type="string" Options="numbf5" FontSize="{Binding FontSize.Value[4]}" />
+
+                            <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="60" Content="UHF To" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Top of UHF Band (MHz)" Grid.Column="1" Grid.Row="60" Model="{Binding UhfHigh}" Type="string" Options="numbf5" FontSize="{Binding FontSize.Value[4]}" />
+
 
                         </Grid>
                     </ScrollViewer>
@@ -809,10 +825,17 @@
                             </DataGrid.ColumnHeaderStyle>
                         </DataGrid>
                     </Border>
-                    <Label HorizontalContentAlignment="Right" Grid.Row="2" Grid.Column="2" Content="UHF Calibrate" FontSize="{Binding FontSize.Value[4]}"/>
-                    <Label HorizontalContentAlignment="Right" Grid.Row="3" Grid.Column="2" Content="VHF Calibrate" FontSize="{Binding FontSize.Value[4]}"/>
-                    <ComboBox HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Grid.Row="2" Grid.Column="3" Margin="10,10,10,10" ItemsSource="{Binding FreqAdj}" SelectedValue="{Binding UhfAdjLab.Value}" FontSize="{Binding FontSize.Value[6]}"/>
-                    <ComboBox HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Grid.Row="3" Grid.Column="3" Margin="10,10,10,10" ItemsSource="{Binding FreqAdj}" SelectedValue="{Binding VhfAdjLab.Value}" FontSize="{Binding FontSize.Value[6]}"/>
+                    <Label HorizontalContentAlignment="Right" Grid.Row="1" Grid.Column="2" Content="UHF Calibrate" FontSize="{Binding FontSize.Value[4]}"/>
+                    <Label HorizontalContentAlignment="Right" Grid.Row="2" Grid.Column="2" Content="VHF Calibrate" FontSize="{Binding FontSize.Value[4]}"/>
+                    <ComboBox HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Grid.Row="1" Grid.Column="3" Margin="10,10,10,10" ItemsSource="{Binding FreqAdj}" SelectedValue="{Binding UhfAdjLab.Value}" FontSize="{Binding FontSize.Value[6]}"/>
+                    <ComboBox HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Grid.Row="2" Grid.Column="3" Margin="10,10,10,10" ItemsSource="{Binding FreqAdj}" SelectedValue="{Binding VhfAdjLab.Value}" FontSize="{Binding FontSize.Value[6]}"/>
+                    <Button Click="PowerReset_Click" Grid.Column="2" Grid.Row="4" Margin="8,8,8,8" Content="Reset" Foreground="#666666" FontWeight="Bold" FontSize="{Binding FontSize.Value[4.5]}">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="25"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                     <Button Click="PowerRevert_Click" Grid.Column="2" Grid.Row="5" Margin="8,8,8,8" Content="Revert" Foreground="#666666" FontWeight="Bold" FontSize="{Binding FontSize.Value[4.5]}">
                         <Button.Resources>
                             <Style TargetType="Border">
@@ -837,6 +860,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
@@ -845,7 +869,7 @@
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
 
-                    <DataGrid Margin="0,10,0,10" HorizontalAlignment="Center" FontSize="{Binding FontSize.Value[4]}" Foreground="White" Grid.RowSpan="5" ItemsSource="{Binding TunerStuff.Value}">
+                    <DataGrid Margin="0,10,0,10" HorizontalAlignment="Center" FontSize="{Binding FontSize.Value[4]}" Foreground="White" Grid.RowSpan="6" ItemsSource="{Binding TunerStuff.Value}">
                         <DataGrid.Resources>
                             <Style TargetType="ScrollBar">
                                 <Setter Property="Background" Value="{x:Null}"/>
@@ -879,13 +903,16 @@
                     </DataGrid>
 
                     <Label Grid.Column="1" Grid.Row="1" Content="Tuner Mode" FontWeight="Bold" FontSize="{Binding FontSize.Value[4]}"/>
-                    <ui:Option Tag="Tuner Operation Mode" Grid.Column="2" Grid.Row="1" Model="{Binding TunerMode}" Type="bool" Options="Channel;False, VFO;True" FontSize="{Binding FontSize.Value[4]}" />
+                    <ui:Option Tag="Tuner Operation Mode" Grid.Column="2" Grid.Row="1" Model="{Binding TunerMode}" Type="bool" Options="Channel;True, VFO;False" FontSize="{Binding FontSize.Value[4]}" />
 
                     <Label Grid.Column="1" Grid.Row="2" Content="Selected Channel" FontWeight="Bold" FontSize="{Binding FontSize.Value[4]}"/>
                     <ui:Option Tag="Tuner Selected Channel" Grid.Column="2" Grid.Row="2" Model="{Binding TunerChan}" Type="int" Options="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25" FontSize="{Binding FontSize.Value[4]}" />
 
                     <Label Grid.Column="1" Grid.Row="3" Content="Squelch" FontWeight="Bold" FontSize="{Binding FontSize.Value[4]}"/>
                     <ui:Option Tag="Mute No/Low Signal Static" Grid.Column="2" Grid.Row="3" Model="{Binding ForbidRec}" Type="bool" Options="No;False, Yes;True" FontSize="{Binding FontSize.Value[4]}" />
+
+                    <Label Grid.Column="1" Grid.Row="4" Content="VFO Frequency" FontWeight="Bold" FontSize="{Binding FontSize.Value[4]}"/>
+                    <ui:Option Tag="FM VFO Frequency (MHz)" Grid.Column="2" Grid.Row="4" Model="{Binding FmVfoFreq}" Type="string" Options="numbf5" FontSize="{Binding FontSize.Value[4]}" />
 
                 </Grid>
             </Border>

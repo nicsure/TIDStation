@@ -37,20 +37,18 @@ namespace TIDStation.Serial
         private static readonly object sync = new(), sync2 = new();
         public static bool Ready => port != null;
         public static byte[] EEPROM => eeprom;
+        public static byte[] BlankEEPROM { get; } = new byte[8192];
 
         private static int cstart = 0x2001, cend = -1;
 
         static Comms()
         {
             var assembly = Assembly.GetExecutingAssembly();
-            using var stream = assembly.GetManifestResourceStream("TIDStation.Resources.BLANK.BIN");
-            if (stream == null)
-            {
-                throw new Exception($"Resource BLANK.BIN not found.");
-            }
+            using var stream = assembly.GetManifestResourceStream("TIDStation.Resources.BLANK.BIN") ?? throw new Exception($"Resource BLANK.BIN not found.");
             using var memoryStream = new MemoryStream();
             stream.CopyTo(memoryStream);
             eeprom = memoryStream.ToArray();
+            Array.Copy(eeprom, 0, BlankEEPROM, 0, 8192);
         }
 
         public static int GetDcsAt(int addr)
@@ -93,7 +91,7 @@ namespace TIDStation.Serial
 
         public static void SetBcdAt(int addr, int i, int count)
         {
-            string s = i.ToString($"D8");
+            string s = i.ToString($"D{count * 2}");
             for (int j = (count - 1) * 2, k = 0; j >= 0; j -= 2, k++)
                 EEPROM[addr + k] = Convert.ToByte(s.Substring(j, 2), 16);
             PreCommit(addr, count);
@@ -111,6 +109,23 @@ namespace TIDStation.Serial
                 EEPROM[addr + k] = Convert.ToByte(s.Substring(j, 2), 16);
             PreCommit(addr, 4);
         }
+
+        public static int GetBcdrAt(int addr, int count)
+        {
+            StringBuilder s = new();
+            for (int i = 0; i < count; i++)
+                s.Append($"{eeprom[addr + i]:X2}");
+            return int.TryParse(s.ToString(), out int j) ? j : -1;
+        }
+
+        public static void SetBcdrAt(int addr, int i, int count)
+        {
+            string s = i.ToString($"D{count * 2}");
+            for (int j = 0, k = 0; k < count; j += 2, k++)
+                EEPROM[addr + k] = Convert.ToByte(s.Substring(j, 2), 16);
+            PreCommit(addr, count);
+        }
+
 
         private static ProgressBar? rwProgress = null;
 

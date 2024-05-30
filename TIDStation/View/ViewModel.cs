@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using TIDStation.General;
 using TIDStation.Serial;
 
@@ -208,6 +209,82 @@ namespace TIDStation.View
         }
     }
 
+    public class BcdrModel : ViewModel
+    {
+        public override object ObjValue { get => Value; set => Value = (string)value; }
+
+        public override bool IsDefault => true;
+        private readonly int address;
+        private readonly double min, max, warnlow, warnhigh;
+
+        public string Value
+        {
+            get => $"{Comms.GetBcdrAt(address, 2) / 10.0:F1}";
+            set
+            {
+                if (Value != value)
+                {
+                    if (double.TryParse(value, out double d))
+                    {
+                        d = d.Clamp(min, max);
+                        if (d < warnlow || d > warnhigh)
+                        {
+                            MessageBox.Show(
+                                "WARNING!\r\n\r\nThe entered frequency limit is outside the designed range\r\n" +
+                                $"of frequencies for this band. {warnlow:F1} - {warnhigh:F1} MHz\r\n\r\n" +
+                                "The radio will likely not function correctly at these frequencies and\r\n" +
+                                "could result in damage to the radio and violation of operator regulations."
+                            );
+                        }
+                        Comms.SetBcdrAt(address, (int)Math.Round(d * 10.0), 2);
+                    }
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public BcdrModel(int addr, double min, double max, double warnlow, double warnhigh)
+        {
+            address = addr;
+            this.min = min;
+            this.max = max;
+            this.warnlow = warnlow;
+            this.warnhigh = warnhigh;
+        }
+    }
+
+    public class BcdfModel : ViewModel
+    {
+        public override object ObjValue { get => Value; set => Value = (string)value; }
+
+        public override bool IsDefault => true;
+        private readonly int address;
+        private readonly double min, max;
+
+        public string Value
+        {
+            get => $"{Comms.GetBcdAt(address, 2) / 10.0:F1}";
+            set
+            {
+                if (Value != value)
+                {
+                    if (double.TryParse(value, out double d))
+                    {
+                        d = d.Clamp(min, max);
+                        Comms.SetBcdAt(address, (int)Math.Round(d * 10.0), 2);
+                    }
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public BcdfModel(int addr, double min, double max)
+        {
+            address = addr;
+            this.min = min; 
+            this.max = max;
+        }
+    }
 
     public class BcdModel : ViewModel
     {
