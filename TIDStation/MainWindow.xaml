@@ -110,7 +110,7 @@
                 <Label x:Name="TunerMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding TunerOpc.Value}" Grid.Row="0" Grid.Column="3" Content="📻" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label x:Name="FlashMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding FlashOpc.Value}" Grid.Column="4" Content="⚡" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label IsHitTestVisible="False" HorizontalContentAlignment="Right" Grid.Column="5" FontWeight="Bold" Content="TID Station" FontSize="{Binding FontSize.Value[4]}"/>
-                <Label IsHitTestVisible="False" HorizontalContentAlignment="Left" Grid.Column="7" FontWeight="Normal" Content="v0.31b nicsure 2024" FontSize="{Binding FontSize.Value[3.5]}"/>
+                <Label IsHitTestVisible="False" HorizontalContentAlignment="Left" Grid.Column="7" FontWeight="Normal" Content="v0.32b nicsure 2024" FontSize="{Binding FontSize.Value[3.5]}"/>
                 <Label x:Name="MinimizeButton" MouseLeftButtonDown="MinimizeButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="10" Content="─" FontSize="{Binding FontSize.Value[6]}"/>
                 <Label x:Name="MaximizeButton" MouseLeftButtonDown="MaximizeButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="11" Content="▢" FontSize="{Binding FontSize.Value[5]}"/>
                 <Label x:Name="CloseButton" MouseLeftButtonDown="CloseButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="12" Content="❌" FontSize="{Binding FontSize.Value[4]}"/>
@@ -908,8 +908,8 @@
                     <Label Grid.Column="1" Grid.Row="2" Content="Selected Channel" FontWeight="Bold" FontSize="{Binding FontSize.Value[4]}"/>
                     <ui:Option Tag="Tuner Selected Channel" Grid.Column="2" Grid.Row="2" Model="{Binding TunerChan}" Type="int" Options="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25" FontSize="{Binding FontSize.Value[4]}" />
 
-                    <Label Grid.Column="1" Grid.Row="3" Content="Squelch" FontWeight="Bold" FontSize="{Binding FontSize.Value[4]}"/>
-                    <ui:Option Tag="Mute No/Low Signal Static" Grid.Column="2" Grid.Row="3" Model="{Binding ForbidRec}" Type="bool" Options="No;False, Yes;True" FontSize="{Binding FontSize.Value[4]}" />
+                    <Label Grid.Column="1" Grid.Row="3" Content="No Monitoring" FontWeight="Bold" FontSize="{Binding FontSize.Value[4]}"/>
+                    <ui:Option Tag="Do Not Monitor Receive" Grid.Column="2" Grid.Row="3" Model="{Binding ForbidRec}" Type="bool" Options="No;False, Yes;True" FontSize="{Binding FontSize.Value[4]}" />
 
                     <Label Grid.Column="1" Grid.Row="4" Content="VFO Frequency" FontWeight="Bold" FontSize="{Binding FontSize.Value[4]}"/>
                     <ui:Option Tag="FM VFO Frequency (MHz)" Grid.Column="2" Grid.Row="4" Model="{Binding FmVfoFreq}" Type="string" Options="numbf5" FontSize="{Binding FontSize.Value[4]}" />

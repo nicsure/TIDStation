@@ -52,6 +52,7 @@ namespace TIDStation.General
             array[offset] = (byte)(shrt & 0xff);
         }
 
+        public static int Sign(this int d) => d > 0 ? 1 : d < 0 ? -1 : 0;
         public static string Truncate(this string str, int length) => str.Length > length ? str[..length] : str;
     }
 }

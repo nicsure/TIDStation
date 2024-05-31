@@ -250,8 +250,8 @@ namespace TIDStation.Data
         public BitsModel TunerChan { get; } = new(0x0ca6, 0x1f);
         public BcdrModel VhfLow { get; } = new(0x0cc0, 18.0, 350.0, 136.0, 174.0);
         public BcdrModel VhfHigh { get; } = new(0x0cc2, 18.0, 350.0, 136.0, 174.0);
-        public BcdrModel UhfLow { get; } = new(0x0cc4, 350.0, 660.0, 400.0, 480.0);
-        public BcdrModel UhfHigh { get; } = new(0x0cc6, 350.0, 660.0, 400.0, 480.0);
+        public BcdrModel UhfLow { get; } = new(0x0cc4, 350.0, 660.0, 400.0, 520.0);
+        public BcdrModel UhfHigh { get; } = new(0x0cc6, 350.0, 660.0, 400.0, 520.0);
         public BcdfModel FmVfoFreq { get; } = new(0x1970, 76.0, 108.0);
 
         public ViewModel<string> UhfAdjLab { get; } = new("0 Hz");

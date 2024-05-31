@@ -135,6 +135,36 @@ namespace TIDStation.View
         }
     }
 
+    public class BcdDouble : ViewModel
+    {
+        public override object ObjValue { get => Value; set => Value = (double)value; }
+        public override bool IsDefault => true;
+
+        private readonly int address, count;
+        private readonly double magnitude;
+        private readonly bool bigEndian;
+        public BcdDouble(int addr, int byteCount, int decimals, bool isBigEndian = false) 
+        {
+            this.address = addr;
+            this.count = byteCount;
+            this.magnitude = Math.Pow(10, decimals);
+            this.bigEndian = isBigEndian;
+        }
+        public double Value
+        {
+            get => (bigEndian ? Comms.GetBcdrAt(address,count) : Comms.GetBcdAt(address, count)) / magnitude;
+            set
+            {
+                int val = (int)Math.Round(value * magnitude);
+                if(bigEndian)
+                    Comms.SetBcdrAt(address, val, count);
+                else
+                    Comms.SetBcdAt(address, val, count);
+                OnPropertyChanged();
+            }
+        }
+    }
+
     public class FreqModel : ViewModel
     {
         public override object ObjValue { get => Value; set => Value = (double)value; }
