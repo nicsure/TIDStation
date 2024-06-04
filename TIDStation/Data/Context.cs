@@ -127,6 +127,9 @@ namespace TIDStation.Data
         //public ViewModel<string> ScrambleALabel { get; } = new("S");
         public BitModel ReverseA { get; } = new(0x195e, 7);
         //public ViewModel<string> ReverseALabel { get; } = new("R");
+        public BitsModel PttIdA { get; } = new(0x195d, 0xc0);
+        public ViewModel<string> PttIdALab { get; } = new("PID");
+
 
         public bool AllowEditB
         {
@@ -170,7 +173,8 @@ namespace TIDStation.Data
         //public ViewModel<string> ScrambleBLabel { get; } = new("S");
         public BitModel ReverseB { get; } = new(0x196e, 7);
         //public ViewModel<string> ReverseBLabel { get; } = new("R");
-
+        public BitsModel PttIdB { get; } = new(0x196d, 0xc0);
+        public ViewModel<string> PttIdBLab { get; } = new("PID");
 
 
 
@@ -253,6 +257,7 @@ namespace TIDStation.Data
         public BcdrModel UhfLow { get; } = new(0x0cc4, 350.0, 660.0, 400.0, 520.0);
         public BcdrModel UhfHigh { get; } = new(0x0cc6, 350.0, 660.0, 400.0, 520.0);
         public BcdfModel FmVfoFreq { get; } = new(0x1970, 76.0, 108.0);
+        public BitsModel Brightness { get; } = new(0x0c9d, 0x7);
 
         public ViewModel<string> UhfAdjLab { get; } = new("0 Hz");
         public ViewModel<string> VhfAdjLab { get; } = new("0 Hz");
@@ -401,7 +406,17 @@ namespace TIDStation.Data
                 SetSplitDir(true);
                 if (Ready) TD.Update();
             };
-
+            PttIdA.PropertyChanged += (s, e) =>
+            {
+                PttIdALab.Value = PttIdA.Value switch
+                {
+                    1 => "BOT",
+                    2 => "EOT",
+                    3 => "BTH",
+                    _ => "PID",
+                };
+                if (Ready) TD.Update();
+            };
 
 
 
@@ -501,7 +516,17 @@ namespace TIDStation.Data
                 SetSplitDir(false);
                 if (Ready) TD.Update();
             };
-
+            PttIdB.PropertyChanged += (s, e) =>
+            {
+                PttIdBLab.Value = PttIdB.Value switch
+                {
+                    1 => "BOT",
+                    2 => "EOT",
+                    3 => "BTH",
+                    _ => "PID",
+                };
+                if (Ready) TD.Update();
+            };
 
             DualWatch.PropertyChanged += (s, e) =>
             {
@@ -796,6 +821,9 @@ namespace TIDStation.Data
             UhfLow.ForceUpdate++;
             UhfHigh.ForceUpdate++;
             FmVfoFreq.ForceUpdate++;
+            Brightness.ForceUpdate++;
+            PttIdA.ForceUpdate++;
+            PttIdB.ForceUpdate++;
             TunerStuff.Value = [];
             TunerStuff.Value = TunerChannel.Mem;
             TestStuff.Value = [];

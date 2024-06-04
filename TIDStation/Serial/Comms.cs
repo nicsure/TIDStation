@@ -304,7 +304,7 @@ namespace TIDStation.Serial
                                 state = 1;
                                 cnt = 0;
                                 break;
-                            case 0x57: // eeprom data
+                            case 0x57: // eeprom data // temp change
                                 state = 2;
                                 cnt = 0;
                                 add = 0;
@@ -353,9 +353,9 @@ namespace TIDStation.Serial
         {
             using Task<string> task = Task.Run(() =>
             {
-                FileInfo? info = null; try { info = new FileInfo(file); } catch { }
+                FileInfo? info = null; try { info = new FileInfo(file); } catch { info = null; }
                 if (info == null) return "File info error";
-                if (info.Length > 65535) return "File too big";
+                if (info.Length > 65536) return "File too big";
                 if (info.Length < 10000) return "File too small";
                 byte[] firmware; try { firmware = File.ReadAllBytes(file); } catch { return "File open error"; }
                 port?.Close(); port = null;
@@ -366,7 +366,7 @@ namespace TIDStation.Serial
                     com.Open();
                 }
                 catch { }
-                if (com == null) return "Error opening COM";
+                if (com == null) return $"Error opening {Context.Instance.FlashComPort.Value}";
                 int b;
                 using (com)
                 {
@@ -379,6 +379,7 @@ namespace TIDStation.Serial
                         if (b == -1) return "Comms error, discovery";
                         if (b == 0xa5) break;
                     }
+                    firmId[3] = 0; for (int k = 4; k < 0x24; k++) firmId[3] += firmId[k];
                     try { com.Write(firmId, 0, firmId.Length); } catch { return "Comms error, handshake"; }
                     while (true)
                     {
@@ -386,23 +387,23 @@ namespace TIDStation.Serial
                         {
                             b = com.ReadByte();
                             if (b == -1) return "Handshake eof";
+                            if (b != 0xa5) return "Unexpected Handshake";
                         }
                         catch (TimeoutException) { break; }
                         catch { return "Comms error hs ack"; }
                     }
                     if (token.IsCancellationRequested) return "Aborted @ handshake";
-                    for (int i = 0, j = 0; i < firmware.Length; i += 0x20, j++)
+                    for (int i = 0x00, j = 0; i < firmware.Length; i += 0x20, j++)
                     {
                         if (token.IsCancellationRequested) return "Aborted @ data xfer";
                         byte[] block = new byte[0x24];
                         Array.Copy(firmware, i, block, 4, i + 0x20 > firmware.Length ? firmware.Length - i : 0x20);
-                        byte cs = 0; for (int k = 4; k < 0x24; k++) cs += block[k];
-                        block[3] = cs;
+                        for (int k = 4; k < 0x24; k++) block[3] += block[k];
                         block[0] = (byte)(i + 0x20 >= firmware.Length ? 0xa2 : 0xa1);
                         block[1] = (byte)((j >> 8) & 0xff);
                         block[2] = (byte)(j & 0xff);
-                        try { com.Write(block, 0, block.Length); } catch { return "Data xfer error"; }
-                        try { while (com.ReadByte() != 0xa3) { } } catch { return "Data ack timeout"; }
+                        try { com.Write(block, 0, block.Length); } catch { return $"Data xfer error, block:{j}, addr:{i:X4}"; }
+                        try { while (com.ReadByte() != 0xa3) { } } catch { return $"Data ack timeout, block:{j}, addr:{i:X4}"; }
                         double f = ((double)i / firmware.Length) * 100;
                         bar.Dispatcher.Invoke(() => bar.Value = f);
                     }
@@ -412,7 +413,7 @@ namespace TIDStation.Serial
             finished(await task);
         }
 
-        private static readonly byte[] firmId = [ 0xA0, 0xEE, 0x74, 0x71, 0x07, 0x74, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+        private static readonly byte[] firmId = [ 0xA0, 0xee, 0x74, 0x00, 0x07, 0x74, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
                                                   0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
                                                   0x55, 0x55, 0x55, 0x55 ];
 

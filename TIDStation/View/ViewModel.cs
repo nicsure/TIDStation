@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -24,14 +25,23 @@ namespace TIDStation.View
             set => OnPropertyChanged();
         }
 
+        private static readonly List<ViewModel> cycles = [];
         protected void OnPropertyChanged(PropertyChangedEventArgs args)
         {
+            lock (cycles)
+            {
+                if(cycles.Contains(this))
+                    throw new Exception("Detected a cyclic property change, do not do this.");
+                cycles.Add(this);
+            }
             (_ = PropertyChanged)?.Invoke(this, args);
+            lock(cycles)
+                cycles.Remove(this);
         }
 
         protected void OnPropertyChanged()
         {
-            (_ = PropertyChanged)?.Invoke(this, valueArgs);
+            OnPropertyChanged(valueArgs);
             if (ConfigName != null)
             {
                 if(IsDefault)
@@ -143,16 +153,19 @@ namespace TIDStation.View
         private readonly int address, count;
         private readonly double magnitude;
         private readonly bool bigEndian;
-        public BcdDouble(int addr, int byteCount, int decimals, bool isBigEndian = false) 
+        private readonly string format;
+        private readonly static PropertyChangedEventArgs valueStringArgs = new(nameof(StringValue));
+        public BcdDouble(int addr, int byteCount, int decimals, int wholeDigits, bool isBigEndian = false) 
         {
             this.address = addr;
             this.count = byteCount;
             this.magnitude = Math.Pow(10, decimals);
             this.bigEndian = isBigEndian;
+            format = $"{new string('0', wholeDigits)}.{new string('0', decimals)}";
         }
         public double Value
         {
-            get => (bigEndian ? Comms.GetBcdrAt(address,count) : Comms.GetBcdAt(address, count)) / magnitude;
+            get => (bigEndian ? Comms.GetBcdrAt(address, count) : Comms.GetBcdAt(address, count)) / magnitude;
             set
             {
                 int val = (int)Math.Round(value * magnitude);
@@ -161,7 +174,13 @@ namespace TIDStation.View
                 else
                     Comms.SetBcdAt(address, val, count);
                 OnPropertyChanged();
+                OnPropertyChanged(valueStringArgs);
             }
+        }
+        public string StringValue
+        {
+            get => Value.ToString(format);
+            set => Value = double.TryParse(value, out double d) ? d : Value;
         }
     }
 
@@ -386,11 +405,14 @@ namespace TIDStation.View
     public class BitsModel : ViewModel
     {
         public override object ObjValue { get => Value; set => Value = (int)value; }
+        private static readonly PropertyChangedEventArgs OpcArgs = new(nameof(Opacity));
 
         public override bool IsDefault => true;
 
         public int AltAddress { get; set; } = -1;
         public int Address => AltAddress > -1 ? AltAddress : address;
+
+        public double Opacity => Value == 0 ? 0.25 : 1.0;
 
         private readonly int address;
         private readonly int shift = 0;
@@ -407,6 +429,7 @@ namespace TIDStation.View
                     b |= ((value << shift) & mask);
                     Comms.Write(Address, (byte)b);
                     OnPropertyChanged();
+                    OnPropertyChanged(OpcArgs);
                 }
             }
         }

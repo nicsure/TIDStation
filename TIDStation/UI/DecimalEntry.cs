@@ -14,7 +14,7 @@ namespace TIDStation.UI
 {
     public class DecimalEntry : Label
     {
-        private string Text { get => (string)Content; set => Content = value; }
+        private string Text { get => ((string)Content).Trim(); set => Content = $"{new string(' ', MaxTextLength)}{value}"[..^MaxTextLength]; }
         private bool inputMode = false;
         private long lastInput;
         private CancellationTokenSource? cts = null;
@@ -23,6 +23,8 @@ namespace TIDStation.UI
         {
             HorizontalContentAlignment = HorizontalAlignment.Right;
         }
+
+        public int MaxTextLength => WholeDigits + DecimalPlaces + DecimalPlaces.Sign();
 
         public void KeyIn(Key k)
         {
@@ -49,7 +51,7 @@ namespace TIDStation.UI
                         Text += (k - Key.D0).ToString();
                         if (!Text.Contains('.') && Text.Length >= WholeDigits && DecimalPlaces > 0)
                             Text += '.';
-                        if (Text.Length >= WholeDigits + DecimalPlaces + DecimalPlaces.Sign())
+                        if (Text.Length >= MaxTextLength)
                             Update(this, Text);
                         break;
                     case Key.Delete:
@@ -64,7 +66,11 @@ namespace TIDStation.UI
                     case Key.Decimal:
                     case Key.OemComma:
                         if (!Text.Contains('.') && DecimalPlaces > 0)
+                        {
+                            while (Text.Length < WholeDigits)
+                                Text = "0" + Text;                                    
                             Text += '.';
+                        }
                         break;
                     case Key.Enter:
                         Update(this, Text);
@@ -100,27 +106,24 @@ namespace TIDStation.UI
         private static void Refresh(DecimalEntry dec, double val)
         {
             string format = $"{new string('0', dec.WholeDigits)}.{new string('0', dec.DecimalPlaces)}";
-            dec.Content = val.ToString(format);
+            dec.Text = val.ToString(format);
             dec.inputMode = false;
             try { dec.cts?.Cancel(); } catch { }
         }
-
-
-
         public double TimeOut
         {
             get { return (double)GetValue(TimeOutProperty); }
             set { SetValue(TimeOutProperty, value); }
         }
         public static readonly DependencyProperty TimeOutProperty =
-            DependencyProperty.Register("TimeOut", typeof(double), typeof(DecimalEntry), new PropertyMetadata(3000));
+            DependencyProperty.Register("TimeOut", typeof(double), typeof(DecimalEntry), new PropertyMetadata(3000.0));
         public double Minimum
         {
             get { return (double)GetValue(MinimumProperty); }
             set { SetValue(MinimumProperty, value); }
         }
         public static readonly DependencyProperty MinimumProperty =
-            DependencyProperty.Register("Minimum", typeof(double), typeof(DecimalEntry), new PropertyMetadata(0));
+            DependencyProperty.Register("Minimum", typeof(double), typeof(DecimalEntry), new PropertyMetadata(0.0));
         public double Maximum
         {
             get { return (double)GetValue(MaximumProperty); }
@@ -134,7 +137,7 @@ namespace TIDStation.UI
             set { SetValue(ValueProperty, value); }
         }
         public static readonly DependencyProperty ValueProperty =
-            DependencyProperty.Register("Value", typeof(double), typeof(DecimalEntry), new PropertyMetadata(0, ValueSet));
+            DependencyProperty.Register("Value", typeof(double), typeof(DecimalEntry), new PropertyMetadata(0.0, ValueSet));
         private static void ValueSet(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is DecimalEntry dec && e.NewValue is double newv)

@@ -344,6 +344,13 @@ namespace TIDStation
                 Context.Instance.BusyLockB.Value = !Context.Instance.BusyLockB.Value;
         }
 
+        private void PttLab_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            BitsModel bits = PttLabA.Equals(sender) ? Context.Instance.PttIdA : Context.Instance.PttIdB;
+            bits.Value = (bits.Value + 1) % 4;
+        }
+
+
         private void AppMode_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             Context.Instance.ChannelModeVis.Value = ChannelMode.Equals(sender) ? Visibility.Visible : Visibility.Hidden;
