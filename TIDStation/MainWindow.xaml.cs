@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -79,9 +80,9 @@ namespace TIDStation
                 if (!Context.Instance.UiReady.Value) return;
                 while (fe != null)
                 {
-                    if (fe.ContextMenu is ContextMenu cm)
+                    if (fe.ContextMenu is ContextMenu cm && !"NLC".Equals(cm.Tag))
                     {
-                        if(e!=null) e.Handled = true;
+                        if (e != null) e.Handled = true;
                         cm.PlacementTarget = fe;
                         cm.IsOpen = true;
                         break;
@@ -448,6 +449,30 @@ namespace TIDStation
             }
         }
 
+        private void FlashSave_Click(object sender, RoutedEventArgs e)
+        {
+            byte[] firmware = new byte[65536];
+            string err = Comms.ProcessFirmware(Context.Instance.FlashFile.Value, firmware, out int fmLength);
+            if (fmLength > 0)
+            {
+                var sfd = new SaveFileDialog()
+                {
+                    Title = "Name of patched firmware binary to save",
+                    Filter = "Bin Files|*.bin"
+                };
+                if (sfd.ShowDialog() ?? false)
+                {
+                    try
+                    {
+                        File.WriteAllBytes(sfd.FileName, firmware[..fmLength]);
+                        return;
+                    }
+                    catch { err = $"Unable to write to file: {sfd.FileName}"; }
+                }
+            }
+            if(err.Length>0) MessageBox.Show(err);
+        }
+
         private void FlashStart_Click(object sender, RoutedEventArgs e)
         {
             Context.Instance.FlashError.Value = "Press ESC to abort";
@@ -634,6 +659,50 @@ namespace TIDStation
         private void ScrollViewer_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             OnMouseLeftButtonDown(null);
+        }
+
+        private void CustomStepA_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem mi)
+                CustomStep_Click(Context.Instance.FreqStepOverrideA, mi);
+        }
+
+        private void CustomStepB_Click(object sender, RoutedEventArgs e)
+        {
+            if(sender is MenuItem mi)
+                CustomStep_Click(Context.Instance.FreqStepOverrideB, mi);
+        }
+
+        private static void CustomStep_Click(ViewModel<double> vm, MenuItem mi)
+        {
+            if(mi.Header is string s && double.TryParse(s, out double d))            
+                vm.Value = d == 8.33 ? 8.33333333333333333333333 : d;
+            else
+                vm.Value = 0;
+        }
+
+        private void ModulationSelect_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            switch(Context.Instance.ModulationOverride.Value)
+            {
+                case "〜":
+                    Context.Instance.ModulationOverride.Value = "AM";
+                    Comms.SetModulationOverride(2);
+                    break;
+                case "AM":
+                    Context.Instance.ModulationOverride.Value = "USB";
+                    Comms.SetModulationOverride(3);
+                    break;
+                case "USB":
+                    Context.Instance.ModulationOverride.Value = "FM";
+                    Comms.SetModulationOverride(4);
+                    break;
+                case "FM":
+                    Context.Instance.ModulationOverride.Value = "〜";
+                    Comms.SetModulationOverride(1);
+                    break;
+            }
+            TD.Update();
         }
     }
 }

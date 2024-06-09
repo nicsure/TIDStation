@@ -18,7 +18,6 @@
     <Window.Resources>
         <Style TargetType="DataGrid">
             <Setter Property="Background" Value="#333333"/>
-
         </Style>
         <Style TargetType="ScrollBar">
             <Setter Property="Background" Value="Transparent" />
@@ -94,9 +93,43 @@
                 <RowDefinition Height="0.15*"/>
                 <RowDefinition />
                 <RowDefinition Height="0.01*"/>
+                <RowDefinition Height="0.2*"/>
+                <RowDefinition Height="0.01*"/>
                 <RowDefinition />
                 <RowDefinition Height="0.02*"/>
             </Grid.RowDefinitions>
+            <Border Grid.ColumnSpan="3" Grid.Column="1" Grid.Row="3" Background="#111111" BorderThickness="1" BorderBrush="#999999" CornerRadius="5">
+                <Grid Margin="2,2,2,2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <ProgressBar  Value="{Binding Rssi.Value}" BorderThickness="0" Minimum="35" Maximum="174" BorderBrush="{x:Null}" Background="{x:Null}">
+                        <ProgressBar.Foreground>
+                            <LinearGradientBrush EndPoint="1,0.5" StartPoint="0,0.5">
+                                <GradientStop Color="#FF009999" Offset="0.002"/>
+                                <GradientStop Color="#FFFF2222" Offset="0.781"/>
+                            </LinearGradientBrush>
+                        </ProgressBar.Foreground>
+                    </ProgressBar>
+                    <Rectangle>
+                        <Rectangle.Fill>
+                            <VisualBrush TileMode="Tile" Viewport="0,0,9,30" ViewportUnits="Absolute" Viewbox="0,0,11,30" ViewboxUnits="Absolute">
+                                <VisualBrush.Visual>
+                                    <Grid>
+                                        <Rectangle Fill="#202020" Width="5" Height="30"/>
+                                    </Grid>
+                                </VisualBrush.Visual>
+                            </VisualBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                    <Viewbox Grid.Row="1" Stretch="Fill">
+                        <TextBlock FontFamily="Courier New" Foreground="#FF876E16">
+                                1     |     3     |     5     |     7     |     9     |    20+    |    40+    |   60+ 
+                        </TextBlock>
+                    </Viewbox>
+                </Grid>
+            </Border>
             <Grid Grid.ColumnSpan="3" Grid.Column="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition/>
@@ -104,9 +137,11 @@
                     <ColumnDefinition/>
                     <ColumnDefinition/>
                     <ColumnDefinition/>
-                    <ColumnDefinition Width="7*"/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="6.75*"/>
                     <ColumnDefinition Width="0.2*"/>
-                    <ColumnDefinition Width="7*"/>
+                    <ColumnDefinition Width="6.75*"/>
+                    <ColumnDefinition/>
                     <ColumnDefinition/>
                     <ColumnDefinition/>
                     <ColumnDefinition/>
@@ -117,12 +152,14 @@
                 <Label x:Name="ChannelMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding ChannelOpc.Value}" Grid.Row="0" Grid.Column="1" Content="📖" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label x:Name="PowerMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding PowerOpc.Value}" Grid.Column="2" Content="📶" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label x:Name="TunerMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding TunerOpc.Value}" Grid.Row="0" Grid.Column="3" Content="📻" FontSize="{Binding FontSize.Value[4]}"/>
-                <Label x:Name="FlashMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding FlashOpc.Value}" Grid.Column="4" Content="⚡" FontSize="{Binding FontSize.Value[4]}"/>
-                <Label IsHitTestVisible="False" HorizontalContentAlignment="Right" Grid.Column="5" FontWeight="Bold" Content="TID Station" FontSize="{Binding FontSize.Value[4]}"/>
-                <Label IsHitTestVisible="False" HorizontalContentAlignment="Left" Grid.Column="7" FontWeight="Normal" Content="v0.33b nicsure 2024" FontSize="{Binding FontSize.Value[3.5]}"/>
-                <Label x:Name="MinimizeButton" MouseLeftButtonDown="MinimizeButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="10" Content="─" FontSize="{Binding FontSize.Value[6]}"/>
-                <Label x:Name="MaximizeButton" MouseLeftButtonDown="MaximizeButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="11" Content="▢" FontSize="{Binding FontSize.Value[5]}"/>
-                <Label x:Name="CloseButton" MouseLeftButtonDown="CloseButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="12" Content="❌" FontSize="{Binding FontSize.Value[4]}"/>
+                <Label x:Name="FlashMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding FlashOpc.Value}" Grid.Column="5" Content="⚡" FontSize="{Binding FontSize.Value[4]}"/>
+                <Label x:Name="AnalyzerMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding FlashOpc.Value}" Grid.Column="4" Content="📊" FontSize="{Binding FontSize.Value[4]}"/>
+                <Label IsHitTestVisible="False" HorizontalContentAlignment="Right" Grid.Column="6" FontWeight="Bold" Content="TID Station" FontSize="{Binding FontSize.Value[4]}"/>
+                <Label IsHitTestVisible="False" HorizontalContentAlignment="Left" Grid.Column="8" FontWeight="Normal" Content="v0.35b nicsure 2024" FontSize="{Binding FontSize.Value[3.5]}"/>
+                <Label x:Name="ModulationSelect" MouseLeftButtonDown="ModulationSelect_MouseLeftButtonDown" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="10" Content="{Binding ModulationOverride.Value}" FontSize="{Binding FontSize.Value[5]}"/>
+                <Label x:Name="MinimizeButton" MouseLeftButtonDown="MinimizeButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="12" Content="─" FontSize="{Binding FontSize.Value[6]}"/>
+                <Label x:Name="MaximizeButton" MouseLeftButtonDown="MaximizeButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="13" Content="▢" FontSize="{Binding FontSize.Value[5]}"/>
+                <Label x:Name="CloseButton" MouseLeftButtonDown="CloseButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="14" Content="❌" FontSize="{Binding FontSize.Value[4]}"/>
             </Grid>
             <Border Opacity="{Binding VfoOpacityA.Value}" Background="Black" Grid.Column="1" Grid.Row="1" CornerRadius="10" BorderBrush="{Binding VfoBorderA.Value}" BorderThickness="1.5">
                 <Grid>
@@ -145,14 +182,31 @@
                         <RowDefinition/>
                         <RowDefinition Height="0.1*"/>
                     </Grid.RowDefinitions>
-                    <Label IsHitTestVisible="{Binding AllowEditA}" x:Name="PwrLabA" MouseLeftButtonDown="PwrLabA_MouseLeftButtonDown" Grid.Row="1" Grid.Column="1" Content="{Binding PwrLabelA.Value}" FontSize="{Binding FontSize.Value[6]}"/>
-                    <Label IsHitTestVisible="{Binding AllowEditA}" x:Name="BwLabA" MouseLeftButtonDown="BwLabA_MouseLeftButtonDown" Grid.Row="1" Grid.Column="2" Content="{Binding BwLabelA.Value}" FontSize="{Binding FontSize.Value[6]}"/>
-                    <Label x:Name="PttLabA" IsHitTestVisible="{Binding AllowEditA}" MouseLeftButtonDown="PttLab_MouseLeftButtonDown" Opacity="{Binding PttIdA.Opacity}" Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="2" Content="{Binding PttIdALab.Value}" FontSize="{Binding FontSize.Value[6]}"/>
-                    <Label x:Name="BusyLabA" IsHitTestVisible="{Binding AllowEditA}" MouseLeftButtonDown="BusyLab_MouseLeftButtonDown" Opacity="{Binding BusyLockA.Opacity}" Grid.Row="1" Grid.Column="5" Content="B" FontSize="{Binding FontSize.Value[6]}"/>
+                    <Label IsHitTestVisible="{Binding AllowEditA}" x:Name="PwrLabA" MouseLeftButtonDown="PwrLabA_MouseLeftButtonDown" Grid.Row="1" Grid.Column="1" Content="{Binding PwrLabelA.Value}" FontSize="{Binding FontSize.Value[5.75]}"/>
+                    <Label IsHitTestVisible="{Binding AllowEditA}" x:Name="BwLabA" MouseLeftButtonDown="BwLabA_MouseLeftButtonDown" Grid.Row="1" Grid.Column="2" Content="{Binding BwLabelA.Value}" FontSize="{Binding FontSize.Value[5.75]}"/>
+                    <Label x:Name="PttLabA" IsHitTestVisible="{Binding AllowEditA}" MouseLeftButtonDown="PttLab_MouseLeftButtonDown" Opacity="{Binding PttIdA.Opacity}" Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="2" Content="{Binding PttIdALab.Value}" FontSize="{Binding FontSize.Value[5.75]}"/>
+                    <Label x:Name="BusyLabA" IsHitTestVisible="{Binding AllowEditA}" MouseLeftButtonDown="BusyLab_MouseLeftButtonDown" Opacity="{Binding BusyLockA.Opacity}" Grid.Row="1" Grid.Column="5" Content="B" FontSize="{Binding FontSize.Value[5.75]}"/>
 
 
 
-                    <Label x:Name="FqStpLabA" MouseLeftButtonDown="FqStpLabA_MouseLeftButtonDown" Grid.Row="1" Grid.Column="6" Grid.ColumnSpan="2" Content="{Binding FrqStpLabelA.Value}" FontSize="{Binding FontSize.Value[4.5]}"/>
+                    <Label x:Name="FqStpLabA" MouseLeftButtonDown="FqStpLabA_MouseLeftButtonDown" Grid.Row="1" Grid.Column="6" Grid.ColumnSpan="2" Content="{Binding FrqStpLabelA.Value}" FontSize="{Binding FontSize.Value[4.5]}">
+                        <Label.ContextMenu>
+                            <ContextMenu Tag="NLC">
+                                <MenuItem Header="Radio" Click="CustomStepA_Click" />
+                                <Separator/>
+                                <MenuItem Header="8.33" Click="CustomStepA_Click" />
+                                <Separator/>
+                                <MenuItem Header="0.01" Click="CustomStepA_Click" />
+                                <MenuItem Header="0.02" Click="CustomStepA_Click" />
+                                <MenuItem Header="0.05" Click="CustomStepA_Click" />
+                                <MenuItem Header="0.10" Click="CustomStepA_Click" />
+                                <MenuItem Header="0.25" Click="CustomStepA_Click" />
+                                <MenuItem Header="0.50" Click="CustomStepA_Click" />
+                                <MenuItem Header="1.00" Click="CustomStepA_Click" />
+                                <MenuItem Header="2.00" Click="CustomStepA_Click" />
+                            </ContextMenu>
+                        </Label.ContextMenu>
+                    </Label>
                     <Label IsHitTestVisible="{Binding AllowEditA}" Grid.Row="2" Grid.Column="1" Content="{Binding ToneRxA.Value}" FontSize="{Binding FontSize.Value[3.5]}">
                         <Label.ContextMenu>
                             <ui:ToneMenu>
@@ -183,10 +237,10 @@
                     <Viewbox Grid.Row="3" Grid.Column="3" Grid.ColumnSpan="5" Stretch="Fill" >
                         <ui:Frequency IsHitTestVisible="{Binding AllowEditA}" SelectedBrush="Aqua" MouseLeftButtonDown="VfoTxA_MouseLeftButtonDown" x:Name="VfoTxA" IsEditable="{Binding SplitTxA.Value}" Foreground="Yellow" Value="{Binding VfoTxA.Value, Mode=TwoWay}" />
                     </Viewbox>
-                    <Label x:Name="ReverseALab" IsHitTestVisible="{Binding AllowEditA}" MouseLeftButtonDown="ReverseALab_MouseLeftButtonDown" HorizontalContentAlignment="Center" Grid.Row="4" Grid.Column="1" FontSize="{Binding FontSize.Value[6]}" Content="R" Opacity="{Binding ReverseA.Opacity}"/>
+                    <Label x:Name="ReverseALab" IsHitTestVisible="{Binding AllowEditA}" MouseLeftButtonDown="ReverseALab_MouseLeftButtonDown" HorizontalContentAlignment="Center" Grid.Row="4" Grid.Column="1" FontSize="{Binding FontSize.Value[5.75]}" Content="R" Opacity="{Binding ReverseA.Opacity}"/>
 
                     <Label x:Name="VfoChASel" MouseLeftButtonDown="VfoChASel_MouseLeftButtonDown" Grid.Row="4" Grid.Column="4" Grid.ColumnSpan="4" FontSize="{Binding FontSize.Value[5]}" Content="{Binding VfoChALabel.Value}"/>
-                    <Label x:Name="ScLabA" IsHitTestVisible="{Binding AllowEditA}" MouseLeftButtonDown="ScLabA_MouseLeftButtonDown" Grid.Row="4" Grid.Column="2" Content="S" Opacity="{Binding ScrambleA.Opacity}" FontSize="{Binding FontSize.Value[6]}"/>
+                    <Label x:Name="ScLabA" IsHitTestVisible="{Binding AllowEditA}" MouseLeftButtonDown="ScLabA_MouseLeftButtonDown" Grid.Row="4" Grid.Column="2" Content="S" Opacity="{Binding ScrambleA.Opacity}" FontSize="{Binding FontSize.Value[5.75]}"/>
 
                     <ui:NumEntry Visibility="{Binding DenyEditA}" x:Name="ChannelEntryA" Grid.Row="4" Grid.Column="3"  Value="{Binding VfoChNumEnterA.Value, Mode=TwoWay}" FontSize="{Binding FontSize.Value[4.5]}" Content="{Binding VfoChNumALabel.Value, Mode=TwoWay}"/>
                 </Grid>
@@ -213,13 +267,30 @@
                         <RowDefinition/>
                         <RowDefinition Height="0.1*"/>
                     </Grid.RowDefinitions>
-                    <Label IsHitTestVisible="{Binding AllowEditB}" x:Name="PwrLabB" MouseLeftButtonDown="PwrLabB_MouseLeftButtonDown" Grid.Row="1" Grid.Column="1" Content="{Binding PwrLabelB.Value}" FontSize="{Binding FontSize.Value[6]}"/>
-                    <Label IsHitTestVisible="{Binding AllowEditB}" x:Name="BwLabB" MouseLeftButtonDown="BwLabB_MouseLeftButtonDown" Grid.Row="1" Grid.Column="2" Content="{Binding BwLabelB.Value}" FontSize="{Binding FontSize.Value[6]}"/>
-                    <Label x:Name="PttLabB" IsHitTestVisible="{Binding AllowEditB}" MouseLeftButtonDown="PttLab_MouseLeftButtonDown" Opacity="{Binding PttIdB.Opacity}" Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="2" Content="{Binding PttIdBLab.Value}" FontSize="{Binding FontSize.Value[6]}"/>
-                    <Label x:Name="BusyLabB" IsHitTestVisible="{Binding AllowEditB}"  MouseLeftButtonDown="BusyLab_MouseLeftButtonDown" Grid.Row="1" Grid.Column="5" Content="B" Opacity="{Binding BusyLockB.Opacity}" FontSize="{Binding FontSize.Value[6]}"/>
+                    <Label IsHitTestVisible="{Binding AllowEditB}" x:Name="PwrLabB" MouseLeftButtonDown="PwrLabB_MouseLeftButtonDown" Grid.Row="1" Grid.Column="1" Content="{Binding PwrLabelB.Value}" FontSize="{Binding FontSize.Value[5.75]}"/>
+                    <Label IsHitTestVisible="{Binding AllowEditB}" x:Name="BwLabB" MouseLeftButtonDown="BwLabB_MouseLeftButtonDown" Grid.Row="1" Grid.Column="2" Content="{Binding BwLabelB.Value}" FontSize="{Binding FontSize.Value[5.75]}"/>
+                    <Label x:Name="PttLabB" IsHitTestVisible="{Binding AllowEditB}" MouseLeftButtonDown="PttLab_MouseLeftButtonDown" Opacity="{Binding PttIdB.Opacity}" Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="2" Content="{Binding PttIdBLab.Value}" FontSize="{Binding FontSize.Value[5.75]}"/>
+                    <Label x:Name="BusyLabB" IsHitTestVisible="{Binding AllowEditB}"  MouseLeftButtonDown="BusyLab_MouseLeftButtonDown" Grid.Row="1" Grid.Column="5" Content="B" Opacity="{Binding BusyLockB.Opacity}" FontSize="{Binding FontSize.Value[5.75]}"/>
 
 
-                    <Label x:Name="FqStpLabB" MouseLeftButtonDown="FqStpLabB_MouseLeftButtonDown" Grid.Row="1" Grid.Column="6" Grid.ColumnSpan="2" Content="{Binding FrqStpLabelB.Value}" FontSize="{Binding FontSize.Value[4.5]}"/>
+                    <Label x:Name="FqStpLabB" MouseLeftButtonDown="FqStpLabB_MouseLeftButtonDown" Grid.Row="1" Grid.Column="6" Grid.ColumnSpan="2" Content="{Binding FrqStpLabelB.Value}" FontSize="{Binding FontSize.Value[4.5]}">
+                        <Label.ContextMenu>
+                            <ContextMenu Tag="NLC">
+                                <MenuItem Header="Radio" Click="CustomStepB_Click" />
+                                <Separator/>
+                                <MenuItem Header="8.33" Click="CustomStepB_Click" />
+                                <Separator/>
+                                <MenuItem Header="0.01" Click="CustomStepB_Click" />
+                                <MenuItem Header="0.02" Click="CustomStepB_Click" />
+                                <MenuItem Header="0.05" Click="CustomStepB_Click" />
+                                <MenuItem Header="0.10" Click="CustomStepB_Click" />
+                                <MenuItem Header="0.25" Click="CustomStepB_Click" />
+                                <MenuItem Header="0.50" Click="CustomStepB_Click" />
+                                <MenuItem Header="1.00" Click="CustomStepB_Click" />
+                                <MenuItem Header="2.00" Click="CustomStepB_Click" />
+                            </ContextMenu>
+                        </Label.ContextMenu>
+                    </Label>
                     <Label IsHitTestVisible="{Binding AllowEditB}" Grid.Row="2" Grid.Column="1" Content="{Binding ToneRxB.Value}" FontSize="{Binding FontSize.Value[3.5]}">
                         <Label.ContextMenu>
                             <ui:ToneMenu>
@@ -249,9 +320,9 @@
                     <Viewbox Grid.Row="3" Grid.Column="3" Grid.ColumnSpan="5" Stretch="Fill" >
                         <ui:Frequency IsHitTestVisible="{Binding AllowEditB}" SelectedBrush="Aqua" MouseLeftButtonDown="VfoTxB_MouseLeftButtonDown" x:Name="VfoTxB" IsEditable="{Binding SplitTxB.Value}" Foreground="Yellow" Value="{Binding VfoTxB.Value, Mode=TwoWay}" />
                     </Viewbox>
-                    <Label x:Name="ReverseBLab" IsHitTestVisible="{Binding AllowEditB}" MouseLeftButtonDown="ReverseBLab_MouseLeftButtonDown" HorizontalContentAlignment="Center" Grid.Row="4" Grid.Column="1" FontSize="{Binding FontSize.Value[6]}" Content="R" Opacity="{Binding ReverseB.Opacity}"/>
+                    <Label x:Name="ReverseBLab" IsHitTestVisible="{Binding AllowEditB}" MouseLeftButtonDown="ReverseBLab_MouseLeftButtonDown" HorizontalContentAlignment="Center" Grid.Row="4" Grid.Column="1" FontSize="{Binding FontSize.Value[5.75]}" Content="R" Opacity="{Binding ReverseB.Opacity}"/>
                     <Label x:Name="VfoChBSel" MouseLeftButtonDown="VfoChBSel_MouseLeftButtonDown" Grid.Row="4" Grid.Column="4" Grid.ColumnSpan="4" FontSize="{Binding FontSize.Value[5]}" Content="{Binding VfoChBLabel.Value}"/>
-                    <Label x:Name="ScLabB" IsHitTestVisible="{Binding AllowEditB}" MouseLeftButtonDown="ScLabB_MouseLeftButtonDown" Grid.Row="4" Grid.Column="2" Content="S" Opacity="{Binding ScrambleB.Opacity}" FontSize="{Binding FontSize.Value[6]}"/>
+                    <Label x:Name="ScLabB" IsHitTestVisible="{Binding AllowEditB}" MouseLeftButtonDown="ScLabB_MouseLeftButtonDown" Grid.Row="4" Grid.Column="2" Content="S" Opacity="{Binding ScrambleB.Opacity}" FontSize="{Binding FontSize.Value[5.75]}"/>
 
                     <ui:NumEntry Visibility="{Binding DenyEditB}" x:Name="ChannelEntryB" Grid.Row="4" Grid.Column="3"  Value="{Binding VfoChNumEnterB.Value, Mode=TwoWay}" FontSize="{Binding FontSize.Value[4.5]}" Content="{Binding VfoChNumBLabel.Value}"/>
                 </Grid>
@@ -259,7 +330,7 @@
 
             </Border>
 
-            <Border Padding="5,5,5,5" Background="#1e1e1e" Grid.Column="1" Grid.Row="3" CornerRadius="10" BorderBrush="#555555" BorderThickness="1">
+            <Border Padding="5,5,5,5" Background="#1e1e1e" Grid.Column="1" Grid.Row="5" CornerRadius="10" BorderBrush="#555555" BorderThickness="1">
                 <Grid>
                     <Grid.Background>
                         <ImageBrush/>
@@ -403,7 +474,7 @@
                 </Grid>
             </Border>
 
-            <Border Background="#222222" Grid.Column="3" Grid.Row="3" CornerRadius="10" BorderBrush="#555555" BorderThickness="1">
+            <Border Background="#222222" Grid.Column="3" Grid.Row="5" CornerRadius="10" BorderBrush="#555555" BorderThickness="1">
                 <Grid Margin="0,0,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -538,7 +609,7 @@
                             <ui:Option Tag="Single VFO Mode" Grid.Column="1" Grid.Row="13" Model="{Binding Sync}" Type="bool" Options="On;False, Off;True" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="14" Content="Mic Gain" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="Microphone Gain" Grid.Column="1" Grid.Row="14" Model="{Binding MicGain}" Type="int" Options="0,1,2,3,4,5,6,7,8,9,10+;10,11+;11,12+;12,13+;13,14+;14,15+;15" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Microphone Gain" Grid.Column="1" Grid.Row="14" Model="{Binding MicGain}" Type="int" Options="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="15" Content="Breath LED" FontSize="{Binding FontSize.Value[4]}" />
                             <ui:Option Tag="Breath LED Indicator" Grid.Column="1" Grid.Row="15" Model="{Binding BreathLed}" Type="int" Options="Off;0, 5 s;1, 10 s;2, 15 s;3, 30 s;4" FontSize="{Binding FontSize.Value[4]}" />
@@ -698,7 +769,7 @@
             </Border>
 
 
-            <Border Visibility="{Binding ChannelModeVis.Value}" Background="#333333" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Grid.RowSpan="3">
+            <Border Visibility="{Binding ChannelModeVis.Value}" Background="#333333" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Grid.RowSpan="5">
                 <DataGrid x:Name="ChannelGrid" Foreground="White" Background="Transparent" FontSize="{Binding FontSize.Value[3]}" ItemsSource="{Binding TestStuff.Value}">
                     <DataGrid.Resources>
                         <Style TargetType="ScrollBar">
@@ -789,7 +860,7 @@
 
 
 
-            <Border IsVisibleChanged="PowerFrame_IsVisibleChanged" Visibility="{Binding PowerModeVis.Value}" Background="#333333" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Grid.RowSpan="3">
+            <Border IsVisibleChanged="PowerFrame_IsVisibleChanged" Visibility="{Binding PowerModeVis.Value}" Background="#333333" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Grid.RowSpan="5">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition/>
@@ -876,7 +947,7 @@
                 </Grid>
             </Border>
 
-            <Border Visibility="{Binding TunerModeVis.Value}" Background="#333333" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Grid.RowSpan="3">
+            <Border Visibility="{Binding TunerModeVis.Value}" Background="#333333" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Grid.RowSpan="5">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition/>
@@ -941,12 +1012,13 @@
             </Border>
 
 
-            <Border Visibility="{Binding FlashModeVis.Value}" Background="#333333" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Grid.RowSpan="3">
+            <Border Visibility="{Binding FlashModeVis.Value}" Background="#333333" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Grid.RowSpan="5">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="2*"/>
                         <RowDefinition Height="1*"/>
-                        <RowDefinition Height="2*"/>
+                        <RowDefinition Height="1*"/>
+                        <RowDefinition Height="1*"/>
                         <RowDefinition Height="1*"/>
                         <RowDefinition/>
                         <RowDefinition Height="0.3*"/>
@@ -957,7 +1029,7 @@
                         <ColumnDefinition/>
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
-                    <Label Grid.ColumnSpan="4" FontWeight="Bold" FontSize="{Binding FontSize.Value[4.5]}">
+                    <Label Grid.ColumnSpan="4" FontWeight="Bold" FontSize="{Binding FontSize.Value[4]}">
                         <TextBlock TextAlignment="Center">
                             NOTE
                             <LineBreak/>
@@ -968,7 +1040,7 @@
                             attempt to flash again until it works.
                         </TextBlock>
                     </Label>
-                    <Label Grid.Row="2" Grid.ColumnSpan="4" FontWeight="Bold" FontSize="{Binding FontSize.Value[5]}">
+                    <Label Grid.Row="2" Grid.RowSpan="2" Grid.ColumnSpan="3" FontWeight="Bold" FontSize="{Binding FontSize.Value[4]}">
                         <TextBlock TextAlignment="Center">
                             Turn off radio. Select firmware file and serial port.
                             <LineBreak/>
@@ -976,6 +1048,13 @@
                         </TextBlock>
                     </Label>
                     <TextBox FontSize="{Binding FontSize.Value[4]}" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="3" Margin="10,5,5,5" Text="{Binding FlashFile.Value}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                    <Button Click="FlashSave_Click" Grid.Column="3" Grid.Row="3" Margin="8,8,8,8" Content="Save" Foreground="#666666" FontWeight="Bold" FontSize="{Binding FontSize.Value[4.5]}">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="25"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                     <Button Click="FlashBrowse_Click" Grid.Column="3" Grid.Row="1" Margin="8,8,8,8" Content="Browse" Foreground="#666666" FontWeight="Bold" FontSize="{Binding FontSize.Value[4.5]}">
                         <Button.Resources>
                             <Style TargetType="Border">
@@ -983,17 +1062,20 @@
                             </Style>
                         </Button.Resources>
                     </Button>
-                    <Button Click="FlashStart_Click" Grid.Column="3" Grid.Row="4" Margin="8,8,8,8" Content="Start" Foreground="#666666" FontWeight="Bold" FontSize="{Binding FontSize.Value[4.5]}">
+                    <Button Click="FlashStart_Click" Grid.Column="3" Grid.Row="5" Margin="8,8,8,8" Content="Start" Foreground="#666666" FontWeight="Bold" FontSize="{Binding FontSize.Value[4.5]}">
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="25"/>
                             </Style>
                         </Button.Resources>
                     </Button>
-                    <TextBlock Text="{Binding FlashError.Value}" FontWeight="Bold" FontSize="{Binding FontSize.Value[4]}" Grid.ColumnSpan="2" Grid.Column="0" Grid.Row="3" Foreground="Red" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <Label Grid.Row="3" Grid.Column="2" Margin="0,0,5,0" Content="Serial Port" FontSize="{Binding FontSize.Value[4.5]}" HorizontalContentAlignment="Right"/>
-                    <ComboBox  Grid.Row="3" Grid.Column="3" SelectedItem="{Binding FlashComPort.Value}" FontSize="{Binding FontSize.Value[4.5]}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,5,0,5" ItemsSource="{Binding AvailPorts}" />
-                    <ProgressBar x:Name="FlashBar" Background="Transparent" Value="{Binding FlashProgress.Value}" Grid.Row="4" Grid.ColumnSpan="3" Margin="0,5,0,5"/>
+                    <Label Grid.Row="4" Grid.Column="0" Margin="0,0,5,0" Content="Patches" FontSize="{Binding FontSize.Value[4.5]}" HorizontalContentAlignment="Right"/>
+                    <ComboBox x:Name="PatchBox" Grid.Row="4" Grid.Column="1" ItemsSource="{Binding PatchList}" FontSize="{Binding FontSize.Value[4.5]}" HorizontalContentAlignment="Left" VerticalContentAlignment="Center" Margin="0,5,0,5"/>
+                    <TextBlock Opacity="0.75" Foreground="{Binding ElementName=PatchBox, Path=Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" Grid.Row="4" Grid.Column="1" Text="Select" FontSize="{Binding FontSize.Value[5]}"/>
+                    <Label Grid.Row="4" Grid.Column="2" Margin="0,0,5,0" Content="Serial Port" FontSize="{Binding FontSize.Value[4.5]}" HorizontalContentAlignment="Right"/>
+                    <ComboBox Grid.Row="4" Grid.Column="3" SelectedItem="{Binding FlashComPort.Value}" FontSize="{Binding FontSize.Value[4.5]}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,5,0,5" ItemsSource="{Binding AvailPorts}" />
+                    <ProgressBar x:Name="FlashBar" Background="#50000000" Value="{Binding FlashProgress.Value}" BorderThickness="2" Grid.Row="5" Grid.ColumnSpan="3" Margin="2,5,2,5"/>
+                    <TextBlock Text="{Binding FlashError.Value}" FontWeight="Bold" FontSize="{Binding FontSize.Value[4]}" Grid.ColumnSpan="3" Grid.Column="0" Grid.Row="5" Foreground="Red" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
 

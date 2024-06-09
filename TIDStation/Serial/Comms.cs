@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -11,6 +12,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using TIDStation.Data;
+using TIDStation.Firmware;
 using TIDStation.General;
 
 namespace TIDStation.Serial
@@ -238,10 +240,43 @@ namespace TIDStation.Serial
             PreCommit(addr, data.Length);
         }
 
+        private static void SendEepromUpdate(int start, int end)
+        {
+            if (port != null)
+            {
+                for (int j = start; j < end; j += 0x20)
+                {
+                    if (rwProgress != null)
+                    {
+                        double pg = (j / (double)end) * 100.0;
+                        rwProgress.Dispatcher.Invoke(() => rwProgress.Value = pg);
+                    }
+                    j.Write16BE(writePkt, 1);
+                    Array.Copy(eeprom, j, writePkt, 4, 0x20);
+                    writePkt[0x24] = 0;
+                    for (int i = 4; i < 0x24; i++)
+                        writePkt[0x24] += writePkt[i];
+                    port.Send(writePkt);
+                    if (!sync.Wait()) return;
+                }
+                if (modOverride < 0)
+                {
+                    modOverride = -modOverride;
+                    port.Send([0x52, (byte)(modOverride - 1), 0, 0x10]);
+                }
+                else
+                    port.Send(endSeq);
+            }
+        }
+
+        private static int modOverride = 1;
+        public static void SetModulationOverride(int mod) => modOverride = -mod;
+
         private static bool skip = false;
+        private static bool UpdatePending => modOverride < 0 || (cstart <= 0x2000 && cend > -1);
         public static async Task Commit()
         {
-            if (cstart <= 0x2000 && cend > -1 && port != null && Context.Instance.LiveMode.Value)
+            if (UpdatePending && port != null && Context.Instance.LiveMode.Value)
             {
                 if (skip) return;
                 skip = true;
@@ -261,22 +296,7 @@ namespace TIDStation.Serial
                             if (!sync.Wait()) return;
                             port.Send(okayAck);
                             if (!sync.Wait()) return;
-                            for (int j = start; j < end; j += 0x20)
-                            {
-                                if (rwProgress != null)
-                                {
-                                    double pg = (j / (double)end) * 100.0;
-                                    rwProgress.Dispatcher.Invoke(() => rwProgress.Value = pg); 
-                                }
-                                j.Write16BE(writePkt, 1);
-                                Array.Copy(eeprom, j, writePkt, 4, 0x20);
-                                writePkt[0x24] = 0;
-                                for (int i = 4; i < 0x24; i++)
-                                    writePkt[0x24] += writePkt[i];
-                                port.Send(writePkt);
-                                if (!sync.Wait()) return;
-                            }
-                            port.Send(endSeq);
+                            SendEepromUpdate(start, end);
                             if (!sync.Wait()) return;
                             port.Send(radioIdReq);
                             if (!sync.Wait()) return;
@@ -288,15 +308,28 @@ namespace TIDStation.Serial
             }
         }
 
+        private static int rssi = 0;
         private static void Received(byte[] data)
         {
             foreach (byte b in data)
             {
                 switch (state)
                 {
+                    case 8: // rssi first (least sig) rssi level
+                        rssi = b;
+                        state = 9;
+                        break;
+                    case 9: // rssi last (most sig) rssi level
+                        rssi |= (b << 8);
+                        Context.Instance.Rssi.Value = rssi / 2.0;
+                        state = 0;
+                        break;
                     case 0: // idle
                         switch (b)
                         {
+                            case 0xa4:
+                                state = 8;
+                                break;
                             case 0x06: // okay, ack?
                                 sync.SyncSignal();
                                 break;
@@ -349,15 +382,29 @@ namespace TIDStation.Serial
             }
         }
 
+        public static string ProcessFirmware(string file, byte[] firmware, out int fmLength)
+        {
+            fmLength = 0;
+            FileInfo? info; try { info = new FileInfo(file); } catch { info = null; }
+            if (info == null) return "File info err";
+            if (info.Length > 65536) return "File too big";
+            if (info.Length < 10000) return "File too small";
+            byte[] tb;
+            try { tb = File.ReadAllBytes(file); } catch { return "File open err"; }
+            Array.Copy(tb, 0, firmware, 0, tb.Length);
+            fmLength = Patches.Apply(firmware, tb.Length, out string err);
+            if (fmLength == 0) return err;
+            return string.Empty;
+        }
+
         public static async Task FlashFirmware(string file, ProgressBar bar, Action<string> finished, CancellationToken token)
         {
             using Task<string> task = Task.Run(() =>
             {
-                FileInfo? info = null; try { info = new FileInfo(file); } catch { info = null; }
-                if (info == null) return "File info error";
-                if (info.Length > 65536) return "File too big";
-                if (info.Length < 10000) return "File too small";
-                byte[] firmware; try { firmware = File.ReadAllBytes(file); } catch { return "File open error"; }
+                byte[] firmware = new byte[65536];
+                string err = ProcessFirmware(file, firmware, out int fmLength);
+                if (fmLength == 0) return err;
+                int b;                
                 port?.Close(); port = null;
                 SerialPort? com = null;
                 try
@@ -366,45 +413,44 @@ namespace TIDStation.Serial
                     com.Open();
                 }
                 catch { }
-                if (com == null) return $"Error opening {Context.Instance.FlashComPort.Value}";
-                int b;
+                if (com == null) return $"Err open {Context.Instance.FlashComPort.Value}";                
                 using (com)
                 {
                     while (true)
                     {
-                        if (token.IsCancellationRequested) return "Aborted @ discovery";
+                        if (token.IsCancellationRequested) return "Aborted Disc";
                         try { b = com.ReadByte(); }
                         catch (TimeoutException) { continue; }
                         catch { b = -1; }
-                        if (b == -1) return "Comms error, discovery";
+                        if (b == -1) return "Error Disc";
                         if (b == 0xa5) break;
                     }
                     firmId[3] = 0; for (int k = 4; k < 0x24; k++) firmId[3] += firmId[k];
-                    try { com.Write(firmId, 0, firmId.Length); } catch { return "Comms error, handshake"; }
+                    try { com.Write(firmId, 0, firmId.Length); } catch { return "Error HS"; }
                     while (true)
                     {
                         try
                         {
                             b = com.ReadByte();
-                            if (b == -1) return "Handshake eof";
-                            if (b != 0xa5) return "Unexpected Handshake";
+                            if (b == -1) return "HS eof";
+                            if (b != 0xa5) return "Unexpect HS";
                         }
                         catch (TimeoutException) { break; }
-                        catch { return "Comms error hs ack"; }
+                        catch { return "Err HS ack"; }
                     }
-                    if (token.IsCancellationRequested) return "Aborted @ handshake";
-                    for (int i = 0x00, j = 0; i < firmware.Length; i += 0x20, j++)
+                    if (token.IsCancellationRequested) return "Aborted HS";
+                    for (int i = 0x00, j = 0; i < fmLength; i += 0x20, j++)
                     {
-                        if (token.IsCancellationRequested) return "Aborted @ data xfer";
+                        if (token.IsCancellationRequested) return "Aborted xfer";
                         byte[] block = new byte[0x24];
-                        Array.Copy(firmware, i, block, 4, i + 0x20 > firmware.Length ? firmware.Length - i : 0x20);
+                        Array.Copy(firmware, i, block, 4, 0x20);
                         for (int k = 4; k < 0x24; k++) block[3] += block[k];
-                        block[0] = (byte)(i + 0x20 >= firmware.Length ? 0xa2 : 0xa1);
+                        block[0] = (byte)(i + 0x20 >= fmLength ? 0xa2 : 0xa1);
                         block[1] = (byte)((j >> 8) & 0xff);
                         block[2] = (byte)(j & 0xff);
-                        try { com.Write(block, 0, block.Length); } catch { return $"Data xfer error, block:{j}, addr:{i:X4}"; }
-                        try { while (com.ReadByte() != 0xa3) { } } catch { return $"Data ack timeout, block:{j}, addr:{i:X4}"; }
-                        double f = ((double)i / firmware.Length) * 100;
+                        try { com.Write(block, 0, block.Length); } catch { return $"xfer err, blk:{j} adr:{i:X4}"; }
+                        try { while (com.ReadByte() != 0xa3) { } } catch { return $"ack TO blk:{j} adr:{i:X4}"; }
+                        double f = ((double)i / fmLength) * 100;
                         bar.Dispatcher.Invoke(() => bar.Value = f);
                     }
                 }

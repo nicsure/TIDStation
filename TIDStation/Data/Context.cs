@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using TIDStation.Firmware;
 using TIDStation.Radio;
 using TIDStation.Serial;
 using TIDStation.UI;
@@ -39,7 +40,14 @@ namespace TIDStation.Data
                 _ = vfoTxB;
             }
         }
-        public static Context Instance => instance;
+        public static Context Instance 
+        { 
+            get 
+            {
+                _ = Patches.List;
+                return instance;
+            }
+        }
         private static readonly Context instance = new();
         private bool suspend = false;
         private bool Ready => UiReady.Value && !suspend;
@@ -53,6 +61,8 @@ namespace TIDStation.Data
         public ViewModel<Visibility> PowerModeVis { get; } = new(Visibility.Hidden);
         public ViewModel<Visibility> FlashModeVis { get; } = new(Visibility.Hidden);
         public ViewModel<Visibility> TunerModeVis { get; } = new(Visibility.Hidden);
+        public ViewModel<string> ModulationOverride { get; } = new("〜");
+        public ViewModel<double> Rssi { get; } = new(0.0);
 
         public ViewModel<Channel[]> TestStuff { get; } = new(Channel.Mem);
         public ViewModel<TunerChannel[]> TunerStuff { get; } = new(TunerChannel.Mem);
@@ -108,6 +118,7 @@ namespace TIDStation.Data
         public BitsModel PowerA { get; } = new(0x195e, 0x18);
         public ViewModel<string> PwrLabelA { get; } = new("L");
         public BitsModel FreqStepA { get; } = new(0x0ca8, 0x70);
+        public ViewModel<double> FreqStepOverrideA { get; } = new(0.0);
         public ViewModel<string> FrqStpLabelA { get; } = new("12.5k");
         public ToneModel ToneTxA { get; } = new(0x195a);
         public ToneModel ToneRxA { get; } = new(0x1958);
@@ -154,6 +165,7 @@ namespace TIDStation.Data
         public BitsModel PowerB { get; } = new(0x196e, 0x18);
         public ViewModel<string> PwrLabelB { get; } = new("L");
         public BitsModel FreqStepB { get; } = new(0x0ca8, 0x7);
+        public ViewModel<double> FreqStepOverrideB { get; } = new(0.0);
         public ViewModel<string> FrqStpLabelB { get; } = new("12.5k");
         public ToneModel ToneTxB { get; } = new(0x196a);
         public ToneModel ToneRxB { get; } = new(0x1968);
@@ -202,7 +214,7 @@ namespace TIDStation.Data
         public BitsModel Scanmode { get; } = new(0x0ca1, 0xc0);
         public BitModel PriorityTx { get; } = new(0x0ca0, 0);
         public BitModel Sync { get; } = new(0x0ca2, 6);
-        public BitsModel MicGain { get; } = new(0x1f20, 0xf);
+        public BitsModel MicGain { get; } = new(0x1f20, 0x1f);
         public BitsModel BreathLed { get; } = new(0x0caf, 0xf0);
         public BitModel Beep { get; } = new(0x0ca1, 2);
         public BitsModel DispLcd { get; } = new(0x0ca0, 0xc0);
@@ -282,9 +294,10 @@ namespace TIDStation.Data
             5 => 25.0,
             _ => 50.0,
         };
-        public double StepA => Steps(FreqStepA.Value);
-        public double StepB => Steps(FreqStepB.Value);
+        public double StepA => FreqStepOverrideA.Value > 0 ? FreqStepOverrideA.Value : Steps(FreqStepA.Value);
+        public double StepB => FreqStepOverrideB.Value > 0 ? FreqStepOverrideB.Value : Steps(FreqStepB.Value);
 
+        public static ObservableCollection<Patch> PatchList => Patches.List;
         public static string[] PortsAvailable => SerialPort.GetPortNames();
         public static string[] AvailPorts => PortsAvailable.Prepend("Offline").ToArray();
         public static object[] AvailPortsDownload =>
@@ -347,15 +360,9 @@ namespace TIDStation.Data
                 {
                     TD.Update();
                 }
-            };            
-            FreqStepA.PropertyChanged += (s, e) =>
-            {
-                FrqStpLabelA.Value = $"{StepA:F2}k";
-                if (Ready)
-                {
-                    TD.Update();
-                }
             };
+            FreqStepA.PropertyChanged += FreqStep_PropertyChanged;
+            FreqStepOverrideA.PropertyChanged += FreqStep_PropertyChanged;
             VfoChA.PropertyChanged += (s, e) =>
             {
                 suspend = true;
@@ -458,14 +465,8 @@ namespace TIDStation.Data
                     TD.Update();
                 }
             };
-            FreqStepB.PropertyChanged += (s, e) =>
-            {
-                FrqStpLabelB.Value = $"{StepB:F2}k";
-                if (Ready)
-                {
-                    TD.Update();
-                }
-            };
+            FreqStepB.PropertyChanged += FreqStep_PropertyChanged;
+            FreqStepOverrideB.PropertyChanged += FreqStep_PropertyChanged;
             VfoChB.PropertyChanged += (s, e) =>
             {
                 suspend = true;
@@ -571,6 +572,15 @@ namespace TIDStation.Data
             ComPort.PropertyChanged += (s, e) => SetComPort();
         }
 
+        private void FreqStep_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            FrqStpLabelA.Value = $"{StepA:F2}k";
+            FrqStpLabelB.Value = $"{StepB:F2}k";
+            if (Ready)
+            {
+                TD.Update();
+            }
+        }
 
         private const string zero7 = "0000000";
         private const string zero8 = "00000000";

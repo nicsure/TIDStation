@@ -54,8 +54,7 @@ namespace TIDStation.Serial
 
         public void Send(byte byt)
         {
-            byte[] sbyt = [byt];
-            Send(sbyt, 0, 1);
+            Send([byt], 0, 1);
         }
 
         private void Loop()
