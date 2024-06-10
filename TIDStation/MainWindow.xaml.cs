@@ -117,7 +117,8 @@ namespace TIDStation
             switch (k)
             {
                 case Key.Tab:
-                    Context.Instance.SelectedVfo.Value = !Context.Instance.SelectedVfo.Value;
+                    if(!Context.Instance.AnalyserMode.Value)
+                        Context.Instance.SelectedVfo.Value = !Context.Instance.SelectedVfo.Value;
                     break;
                 case Key.Up:
                 case Key.Down:
@@ -703,6 +704,15 @@ namespace TIDStation
                     break;
             }
             TD.Update();
+        }
+
+        private void AnalyzerMode_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            Context.Instance.AnalyserMode.Value = !Context.Instance.AnalyserMode.Value;
+            if(Context.Instance.AnalyserMode.Value)
+            {
+                Context.Instance.SelectedVfo.Value = false;
+            }
         }
     }
 }

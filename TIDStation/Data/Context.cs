@@ -63,6 +63,9 @@ namespace TIDStation.Data
         public ViewModel<Visibility> TunerModeVis { get; } = new(Visibility.Hidden);
         public ViewModel<string> ModulationOverride { get; } = new("〜");
         public ViewModel<double> Rssi { get; } = new(0.0);
+        public ViewModel<bool> AnalyserMode { get; } = new(false);
+        public ViewModel<double> AnalyserOpacity { get; } = new(0.5);
+        public ViewModel<Visibility> AnalyserVisibility { get; } = new(Visibility.Hidden);
 
         public ViewModel<Channel[]> TestStuff { get; } = new(Channel.Mem);
         public ViewModel<TunerChannel[]> TunerStuff { get; } = new(TunerChannel.Mem);
@@ -569,6 +572,13 @@ namespace TIDStation.Data
                 OfflineMode.Value = !LiveMode.Value;
                 OfflineModeOpacity.Value = LiveMode.Value ? 0.5 : 1.0;
             };
+            AnalyserMode.PropertyChanged += (s, e) =>
+            {
+                AnalyserOpacity.Value = AnalyserMode.Value ? 1.0 : 0.5;
+                AnalyserVisibility.Value = AnalyserMode.Value ? Visibility.Visible : Visibility.Hidden;
+            };
+
+
             ComPort.PropertyChanged += (s, e) => SetComPort();
         }
 

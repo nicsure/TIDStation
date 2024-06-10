@@ -153,7 +153,7 @@
                 <Label x:Name="PowerMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding PowerOpc.Value}" Grid.Column="2" Content="📶" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label x:Name="TunerMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding TunerOpc.Value}" Grid.Row="0" Grid.Column="3" Content="📻" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label x:Name="FlashMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding FlashOpc.Value}" Grid.Column="5" Content="⚡" FontSize="{Binding FontSize.Value[4]}"/>
-                <Label x:Name="AnalyzerMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding FlashOpc.Value}" Grid.Column="4" Content="📊" FontSize="{Binding FontSize.Value[4]}"/>
+                <Label x:Name="AnalyzerMode" Opacity="{Binding AnalyserOpacity.Value}" MouseLeftButtonDown="AnalyzerMode_MouseLeftButtonDown" Grid.Column="4" Content="📊" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label IsHitTestVisible="False" HorizontalContentAlignment="Right" Grid.Column="6" FontWeight="Bold" Content="TID Station" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label IsHitTestVisible="False" HorizontalContentAlignment="Left" Grid.Column="8" FontWeight="Normal" Content="v0.35b nicsure 2024" FontSize="{Binding FontSize.Value[3.5]}"/>
                 <Label x:Name="ModulationSelect" MouseLeftButtonDown="ModulationSelect_MouseLeftButtonDown" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="10" Content="{Binding ModulationOverride.Value}" FontSize="{Binding FontSize.Value[5]}"/>
@@ -326,8 +326,10 @@
 
                     <ui:NumEntry Visibility="{Binding DenyEditB}" x:Name="ChannelEntryB" Grid.Row="4" Grid.Column="3"  Value="{Binding VfoChNumEnterB.Value, Mode=TwoWay}" FontSize="{Binding FontSize.Value[4.5]}" Content="{Binding VfoChNumBLabel.Value}"/>
                 </Grid>
-
-
+            </Border>
+            
+            <Border Visibility="{Binding AnalyserVisibility.Value}" Background="Black" Grid.Column="3" Grid.Row="1" CornerRadius="10" BorderBrush="{Binding VfoBorderB.Value}" BorderThickness="1.5">
+                
             </Border>
 
             <Border Padding="5,5,5,5" Background="#1e1e1e" Grid.Column="1" Grid.Row="5" CornerRadius="10" BorderBrush="#555555" BorderThickness="1">

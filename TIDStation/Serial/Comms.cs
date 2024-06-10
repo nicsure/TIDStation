@@ -263,9 +263,9 @@ namespace TIDStation.Serial
                 {
                     modOverride = -modOverride;
                     port.Send([0x52, (byte)(modOverride - 1), 0, 0x10]);
+                    if (!sync.Wait()) return;
                 }
-                else
-                    port.Send(endSeq);
+                port.Send(endSeq);
             }
         }
 
@@ -274,6 +274,54 @@ namespace TIDStation.Serial
 
         private static bool skip = false;
         private static bool UpdatePending => modOverride < 0 || (cstart <= 0x2000 && cend > -1);
+
+
+        public static async Task Scan(double midFreq, double step, int steps)
+        {
+            double offset = (step / 1000.0) * Math.Abs(steps / 2);
+            midFreq -= offset;
+            int sf = (int)Math.Round(midFreq * 100000.0);
+            int fr4 = sf >> 24;
+            int fr3 = (sf >> 16) & 0xff;
+            int fr2 = (sf >> 8) & 0xff;
+            int fr1 = sf & 0xff;
+            int st = (int)Math.Round(step * 100.0);
+            int st2 = (st >> 8) & 0xff;
+            int st1 = st & 0xff;
+            if (port != null && Context.Instance.LiveMode.Value)
+            {
+                using Task task = Task.Run(() =>
+                {
+                    lock (sync2)
+                    {
+                        lock (sync)
+                        {
+                            port.Send(compId);
+                            if (!sync.Wait()) return;
+                            port.Send(radioIdReq);
+                            if (!sync.Wait()) return;
+                            port.Send(okayAck);
+                            if (!sync.Wait()) return;
+                            port.Send([0x52, (byte)fr4, (byte)fr3, 0x11]);
+                            if (!sync.Wait()) return;
+                            port.Send([0x52, (byte)fr2, (byte)fr1, 0x12]);
+                            if (!sync.Wait()) return;
+                            port.Send([0x52, (byte)st2, (byte)st1, 0x13]);
+                            if (!sync.Wait()) return;
+                            port.Send([0x52, (byte)steps, (byte)steps, 0x14]);
+                            if (!sync.Wait()) return;
+                            port.Send(endSeq);
+                            if (!sync.Wait()) return;
+                            port.Send(radioIdReq);
+                            if (!sync.Wait()) return;
+                        }
+                    }
+                });
+                await task;
+            }
+        }
+
+
         public static async Task Commit()
         {
             if (UpdatePending && port != null && Context.Instance.LiveMode.Value)
@@ -308,13 +356,26 @@ namespace TIDStation.Serial
             }
         }
 
-        private static int rssi = 0;
+        private static int rssi = 0, stepCount, stepCounter;
+        private static readonly int[] freqScans = new int[256];
         private static void Received(byte[] data)
         {
             foreach (byte b in data)
             {
                 switch (state)
                 {
+                    case 11: // freq scans
+                        freqScans[stepCounter++] = b;
+                        if (stepCounter >= stepCount)
+                        {
+                            state = 0;
+                        }
+                        break;
+                    case 10: // freq scan step count
+                        stepCount = b;
+                        stepCounter = 0;
+                        state = 11;
+                        break;
                     case 8: // rssi first (least sig) rssi level
                         rssi = b;
                         state = 9;
@@ -327,6 +388,9 @@ namespace TIDStation.Serial
                     case 0: // idle
                         switch (b)
                         {
+                            case 0xb4:
+                                state = 10;
+                                break;
                             case 0xa4:
                                 state = 8;
                                 break;

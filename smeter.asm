@@ -5,7 +5,7 @@ resumeRssiDetour:
 .ORG        0xEAA9              ; Serial send byte function
 sendSerialByte:
 
-.ORG        0xF040
+.ORG        0xF200
 rssiDetour:                     ; make sure 2f5 is in DPTR before resuming
     MOV     DPTR, #0x2F5
     MOVX    A, @DPTR
