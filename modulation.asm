@@ -45,7 +45,12 @@ not01:
     MOV     0x4D, #0x47
     SJMP    resumeMod
 not02:
+    MOV     0x4D, #0x3D
+    MOV     0x4E, #0x2A
+    MOV     R3, #0xAB
+    LCALL   resumeModDetour
     MOV     R5, #0x61
+    MOV     0x4D, #0x47
 resumeMod:
     MOV     R3, #0x40
     SJMP    exitModDetour

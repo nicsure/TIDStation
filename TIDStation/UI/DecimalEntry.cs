@@ -14,7 +14,12 @@ namespace TIDStation.UI
 {
     public class DecimalEntry : Label
     {
-        private string Text { get => ((string)Content).Trim(); set => Content = $"{new string(' ', MaxTextLength)}{value}"[..^MaxTextLength]; }
+        public EventHandler? EntryComplete = null;
+        private string Text 
+        { 
+            get => ((string)Content).Trim();
+            set => Content = value;
+        }
         private bool inputMode = false;
         private long lastInput;
         private CancellationTokenSource? cts = null;
@@ -47,6 +52,9 @@ namespace TIDStation.UI
             {
                 switch (k)
                 {
+                    case Key.Escape:
+                        Refresh(this, Value);
+                        break;
                     case >= Key.D0 and <= Key.D9:
                         Text += (k - Key.D0).ToString();
                         if (!Text.Contains('.') && Text.Length >= WholeDigits && DecimalPlaces > 0)
@@ -106,9 +114,11 @@ namespace TIDStation.UI
         private static void Refresh(DecimalEntry dec, double val)
         {
             string format = $"{new string('0', dec.WholeDigits)}.{new string('0', dec.DecimalPlaces)}";
-            dec.Text = val.ToString(format);
+            string what = val.ToString(format);
+            dec.Text = what;
             dec.inputMode = false;
             try { dec.cts?.Cancel(); } catch { }
+            (_ = dec.EntryComplete)?.Invoke(dec, EventArgs.Empty);
         }
         public double TimeOut
         {

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Documents;
 using TIDStation.General;
 using TIDStation.Serial;
 
@@ -561,6 +562,54 @@ namespace TIDStation.View
                 }
             }
         }
+    }
+
+    public class BoolModel : ViewModel
+    {
+        public override object ObjValue { get => Value; set => Value = (bool)value; }
+        private static readonly PropertyChangedEventArgs OpcArgs = new(nameof(Opacity));
+        private static readonly PropertyChangedEventArgs VisArgs = new(nameof(Visible));
+        private static readonly PropertyChangedEventArgs ROpcArgs = new(nameof(RevOpacity));
+        private static readonly PropertyChangedEventArgs RVisArgs = new(nameof(RevVisible));
+        private static readonly PropertyChangedEventArgs NotArgs = new(nameof(Not));
+        public override bool IsDefault => true;
+        private bool val;
+
+        private double opcTrue = 1.0, opcFalse = 0.4;
+
+        public bool Value
+        {
+            get => val;
+            set
+            {
+                val = value;
+                OnPropertyChanged();
+                OnPropertyChanged(OpcArgs);
+                OnPropertyChanged(VisArgs);
+                OnPropertyChanged(ROpcArgs);
+                OnPropertyChanged(RVisArgs);
+                OnPropertyChanged(NotArgs);
+            }
+        }
+
+        public BoolModel(bool initValue)
+        {
+            Value = initValue;
+        }
+
+        public void SetOpacities(double whenTrue, double whenFalse)
+        {
+            opcTrue = whenTrue; 
+            opcFalse = whenFalse;
+            OnPropertyChanged(OpcArgs);
+            OnPropertyChanged(ROpcArgs);
+        }
+
+        public bool Not => !val;
+        public double Opacity => val ? opcTrue : opcFalse;
+        public double RevOpacity => val ? opcFalse : opcTrue;
+        public Visibility Visible => val ? Visibility.Visible : Visibility.Hidden;
+        public Visibility RevVisible => val ? Visibility.Hidden : Visibility.Visible;
     }
 
 }

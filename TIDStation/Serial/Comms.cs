@@ -14,6 +14,8 @@ using System.Windows.Controls;
 using TIDStation.Data;
 using TIDStation.Firmware;
 using TIDStation.General;
+using TIDStation.Radio;
+using TIDStation.UI;
 
 namespace TIDStation.Serial
 {
@@ -274,20 +276,10 @@ namespace TIDStation.Serial
 
         private static bool skip = false;
         private static bool UpdatePending => modOverride < 0 || (cstart <= 0x2000 && cend > -1);
+        private static BarGraph? barGraph = null;
 
-
-        public static async Task Scan(double midFreq, double step, int steps)
+        public static async Task DoScan(int fr1, int fr2, int fr3, int fr4, int st1, int st2, int steps, CancellationToken? token)
         {
-            double offset = (step / 1000.0) * Math.Abs(steps / 2);
-            midFreq -= offset;
-            int sf = (int)Math.Round(midFreq * 100000.0);
-            int fr4 = sf >> 24;
-            int fr3 = (sf >> 16) & 0xff;
-            int fr2 = (sf >> 8) & 0xff;
-            int fr1 = sf & 0xff;
-            int st = (int)Math.Round(step * 100.0);
-            int st2 = (st >> 8) & 0xff;
-            int st1 = st & 0xff;
             if (port != null && Context.Instance.LiveMode.Value)
             {
                 using Task task = Task.Run(() =>
@@ -308,8 +300,12 @@ namespace TIDStation.Serial
                             if (!sync.Wait()) return;
                             port.Send([0x52, (byte)st2, (byte)st1, 0x13]);
                             if (!sync.Wait()) return;
-                            port.Send([0x52, (byte)steps, (byte)steps, 0x14]);
-                            if (!sync.Wait()) return;
+                            do
+                            {
+                                port.Send([0x52, (byte)steps, (byte)steps, 0x14]);
+                                if (!sync.Wait()) return;
+                            }
+                            while (token != null && !token.Value.IsCancellationRequested);
                             port.Send(endSeq);
                             if (!sync.Wait()) return;
                             port.Send(radioIdReq);
@@ -321,9 +317,74 @@ namespace TIDStation.Serial
             }
         }
 
-
-        public static async Task Commit()
+        public static async Task Scan(double midFreq, double step, int steps, BarGraph bg, CancellationToken? token)
         {
+            Context.Instance.AnalyserRun.Value = true;
+            barGraph = bg;
+            double offset = (step / 1000.0) * Math.Abs(steps / 2);
+            midFreq -= offset;
+            int sf = (int)Math.Round(midFreq * 100000.0);
+            int fr4 = sf >> 24;
+            int fr3 = (sf >> 16) & 0xff;
+            int fr2 = (sf >> 8) & 0xff;
+            int fr1 = sf & 0xff;
+            int st = (int)Math.Round(step * 100.0);
+            int st2 = (st >> 8) & 0xff;
+            int st1 = st & 0xff;
+            int sq = Context.Instance.Squelch.Value;
+            if (sq > 0)
+            {
+                Context.Instance.Squelch.Value = 0;
+                await Commit(true);
+            }            
+            if (port != null && Context.Instance.LiveMode.Value)
+            {
+                using Task task = Task.Run(() =>
+                {
+                    lock (sync2)
+                    {
+                        lock (sync)
+                        {
+                            port.Send(compId);
+                            if (!sync.Wait()) return;
+                            port.Send(radioIdReq);
+                            if (!sync.Wait()) return;
+                            port.Send(okayAck);
+                            if (!sync.Wait()) return;
+                            port.Send([0x52, (byte)fr4, (byte)fr3, 0x11]);
+                            if (!sync.Wait()) return;
+                            port.Send([0x52, (byte)fr2, (byte)fr1, 0x12]);
+                            if (!sync.Wait()) return;
+                            port.Send([0x52, (byte)st2, (byte)st1, 0x13]);
+                            if (!sync.Wait()) return;
+                            do
+                            {
+                                port.Send([0x52, (byte)steps, (byte)steps, 0x14]);
+                                if (!sync.Wait()) return;
+                            }
+                            while (token != null && !token.Value.IsCancellationRequested);
+                            port.Send(endSeq);
+                            if (!sync.Wait()) return;
+                            port.Send(radioIdReq);
+                            if (!sync.Wait()) return;
+                        }
+                    }
+                });
+                await task;
+                if (sq > 0)
+                {
+                    Thread.Sleep(200);
+                    Context.Instance.Squelch.Value = sq;
+                    await Commit(true);
+                }
+            }
+            Context.Instance.AnalyserRun.Value = false;
+        }
+
+
+        public static async Task Commit(bool noScanCheck = false)
+        {
+            if (!noScanCheck && Context.Instance.AnalyserRun.Value) return;
             if (UpdatePending && port != null && Context.Instance.LiveMode.Value)
             {
                 if (skip) return;
@@ -358,23 +419,45 @@ namespace TIDStation.Serial
 
         private static int rssi = 0, stepCount, stepCounter;
         private static readonly int[] freqScans = new int[256];
+        private static long lastRssi = -1;
+
+        public static async Task RssiWatcher()
+        {
+            while(true)
+            {
+                using Task task = Task.Delay(301);
+                await task;
+                if (lastRssi > -1)
+                {
+                    long now = DateTime.Now.Ticks;
+                    long rssiTime = now - lastRssi;
+                    if (rssiTime > 6000000)
+                    {
+                        lastRssi = -1;
+                        Context.Instance.Rssi.Value = 40;
+                    }
+                }
+            }
+        }
+
         private static void Received(byte[] data)
         {
             foreach (byte b in data)
             {
                 switch (state)
                 {
-                    case 11: // freq scans
+                    case 12: // freq scans
                         freqScans[stepCounter++] = b;
                         if (stepCounter >= stepCount)
                         {
                             state = 0;
+                            barGraph?.Dispatcher.Invoke(() => barGraph.SetValues(stepCount, freqScans));
                         }
                         break;
-                    case 10: // freq scan step count
+                    case 11: // freq scan step count
                         stepCount = b;
                         stepCounter = 0;
-                        state = 11;
+                        state = 12;
                         break;
                     case 8: // rssi first (least sig) rssi level
                         rssi = b;
@@ -382,14 +465,19 @@ namespace TIDStation.Serial
                         break;
                     case 9: // rssi last (most sig) rssi level
                         rssi |= (b << 8);
-                        Context.Instance.Rssi.Value = rssi / 2.0;
+                        state = 10;
+                        break;
+                    case 10: // rssi noise level
+                        //Debug.WriteLine($"RSSI:{rssi}  Noise:{b}");
+                        Context.Instance.Rssi.Value = b < 40 ? rssi : 40;
+                        lastRssi = DateTime.Now.Ticks;
                         state = 0;
                         break;
                     case 0: // idle
                         switch (b)
                         {
                             case 0xb4:
-                                state = 10;
+                                state = 11;
                                 break;
                             case 0xa4:
                                 state = 8;
@@ -463,10 +551,10 @@ namespace TIDStation.Serial
 
         public static async Task FlashFirmware(string file, ProgressBar bar, Action<string> finished, CancellationToken token)
         {
+            byte[] firmware = new byte[65536];
+            string err = ProcessFirmware(file, firmware, out int fmLength);
             using Task<string> task = Task.Run(() =>
             {
-                byte[] firmware = new byte[65536];
-                string err = ProcessFirmware(file, firmware, out int fmLength);
                 if (fmLength == 0) return err;
                 int b;                
                 port?.Close(); port = null;

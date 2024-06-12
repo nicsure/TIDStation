@@ -40,10 +40,13 @@ namespace TIDStation
             SizeChanged += MainWindow_SizeChanged;
             IsEnabledChanged += MainWindow_IsEnabledChanged;
             MainBorder.IsEnabledChanged += MainWindow_IsEnabledChanged;
+            StepsEntry.EntryComplete += StepsEntry_EntryComplete;
+            ScanGraph.BarClicked += Scanner_BarClicked;
             Context.Instance.KeyPad.PropertyChanged += KeyPad_PropertyChanged;
             Frequency.Default = VfoRxA;
             Frequency.Current = VfoRxA;
             Context.Instance.SyncToRadio();
+            _ = Comms.RssiWatcher();
         }
 
         private void KeyPad_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -112,6 +115,11 @@ namespace TIDStation
             if(!Context.Instance.UiReady.Value)
             {
                 try { flashCancel?.Cancel(); } catch { }
+                return;
+            }
+            if(stepEntry != null)
+            {
+                StepsEntry.KeyIn(k);
                 return;
             }
             switch (k)
@@ -712,6 +720,73 @@ namespace TIDStation
             if(Context.Instance.AnalyserMode.Value)
             {
                 Context.Instance.SelectedVfo.Value = false;
+            }
+            else
+            {
+                StepsEntry_EntryComplete(sender, e);
+            }
+        }
+
+        private CancellationTokenSource? faCts = null;
+
+        private void SetFreqLabels()
+        {
+            double rx = RX.Value;
+            double step = Step / 1000.0;
+            int steps = (int)Context.Instance.AnalyserSteps.Value;
+            double offset = step * Math.Abs(steps / 2);
+            rx -= offset;
+            for (int i = 0; i < steps; i++)
+            {
+                if(ScanGraph.Children[i] is Grid grid)
+                {
+                    grid.Tag = rx.ToString("F5");
+                    rx += step;
+                }
+            }
+        }
+
+        private void StartFA_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            using (faCts)
+            {
+                faCts = new CancellationTokenSource();
+                SetFreqLabels();
+                Tasks.Watch = Comms.Scan(RX.Value, Step, (int)Context.Instance.AnalyserSteps.Value, ScanGraph, faCts.Token);
+                //Context.Instance.AnalyserRun.Value = true;
+            }
+        }
+
+        private void StopFA_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            try { faCts?.Cancel(); } catch { }
+            //Context.Instance.AnalyserRun.Value = false;
+        }
+
+        private void OnceFA_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            SetFreqLabels();
+            Tasks.Watch = Comms.Scan(RX.Value, Step, (int)Context.Instance.AnalyserSteps.Value, ScanGraph, null);
+        }
+
+        private DecimalEntry? stepEntry = null;
+        private void StepsEntry_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            StepsEntry.Foreground = Brushes.Yellow;
+            stepEntry = StepsEntry;
+        }
+        private void StepsEntry_EntryComplete(object? sender, EventArgs e)
+        {
+            StepsEntry.Foreground = Brushes.Green;
+            stepEntry = null;
+        }
+        private void Scanner_BarClicked(object? sender, EventArgs e)
+        {
+            try { faCts?.Cancel(); } catch { }
+            //Context.Instance.AnalyserRun.Value = false;
+            if (sender is Grid grid && grid.Tag is string s && double.TryParse(s, out double d))
+            {
+                RX.Value = d;
             }
         }
     }

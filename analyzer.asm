@@ -60,8 +60,9 @@ SetStepCount:
     LCALL   sendSerialByte
     MOV     DPTR, #0x47D
     MOVX    A, @DPTR
-    MOV     R7, A
+    MOV     R7, A    
     LCALL   sendSerialByte
+    ACALL   copyFreq
     SJMP    initLoop
 
 signalLoop:
@@ -118,8 +119,27 @@ applyFreq:
     LCALL   setReg
     RET
 
-getFreq:
+copyFreq:
     MOV     DPTR, #0x4F0
+    MOVX    A, @DPTR
+    MOV     DPTR, #0x4F6
+    MOVX    @DPTR, A
+    MOV     DPTR, #0x4F1
+    MOVX    A, @DPTR
+    MOV     DPTR, #0x4F7
+    MOVX    @DPTR, A
+    MOV     DPTR, #0x4F2
+    MOVX    A, @DPTR
+    MOV     DPTR, #0x4F8
+    MOVX    @DPTR, A
+    MOV     DPTR, #0x4F3
+    MOVX    A, @DPTR
+    MOV     DPTR, #0x4F9
+    MOVX    @DPTR, A
+    RET
+
+getFreq:
+    MOV     DPTR, #0x4F6
     MOVX    A, @DPTR
     MOV     R0, A
     INC     DPTR
@@ -134,7 +154,7 @@ getFreq:
     RET
 
 setFreq:
-    MOV     DPTR, #0x4F0
+    MOV     DPTR, #0x4F6
     MOV     A, R0
     MOVX    @DPTR, A
     INC     DPTR
