@@ -89,7 +89,7 @@ namespace TIDStation.UI
 
         public void SetValues(int count, int[] values)
         {
-            int hi = -1, lo = 10000;
+            int hi = -10000, lo = 10000;
             for (int i = 0; i < count && i < barCount; i++)
             {
                 int v = values[i];
@@ -99,8 +99,9 @@ namespace TIDStation.UI
             int dif = hi - lo;
             for (int i = 0; i < count && i < barCount; i++)
             {
-                int a = values[i] - lo;
-                int b = dif - a;
+                int a, b;
+                a = values[i] - lo;
+                b = dif - a;
                 if (Children[i] is Grid bar)
                 {
                     bar.RowDefinitions[0].Height = new(b, GridUnitType.Star);

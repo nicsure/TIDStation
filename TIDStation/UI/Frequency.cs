@@ -8,11 +8,13 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using TIDStation.General;
+using TIDStation.Serial;
 
 namespace TIDStation.UI
 {
     public class Frequency : Label
     {
+        private const double shift = 335.54432;
         public static Frequency Default { get; set; } = null!;
         public static Frequency Current { get; set; } = null!;
 
@@ -22,8 +24,10 @@ namespace TIDStation.UI
         private string Text
         {
             get => (Content is string s) ? s.Trim() : string.Empty;
-            set => Content = $"{value}         "[..9];
-            
+            set
+            {
+                Content = $"{value}         "[..9];
+            }
         }
 
         public Frequency() : base()
@@ -32,7 +36,11 @@ namespace TIDStation.UI
 
         private void EndInput()
         {
-            Value = (double.TryParse(Text, out double d) ? d : Value).Clamp(18, 660);
+            double clampLo = 18.0 + (Comms.ShiftMode ? shift : 0.0);
+            double clampHi = Comms.ShiftMode ? 999.99999 : 660.0;
+            double fr = (double.TryParse(Text, out double d) ? d : Value + (Comms.ShiftMode ? shift : 0.0)).Clamp(clampLo, clampHi);
+            if (Comms.ShiftMode) fr -= shift;
+            Value = fr;
             Refresh();
             inputMode = false;
             Default?.Select();
@@ -50,9 +58,11 @@ namespace TIDStation.UI
         }
         
 
-        private void Refresh()
+        public void Refresh()
         {
-            Text = Value.ToString("000.00000");
+            double fr = Value;
+            if(Comms.ShiftMode) fr += shift;
+            Text = fr.ToString("000.00000");
         }
 
         public void KeyIn(Key k)
@@ -180,6 +190,7 @@ namespace TIDStation.UI
         {
             if(d is Frequency freq && e.NewValue is double dbl)
             {
+                if (Comms.ShiftMode) dbl += shift;
                 freq.Text = $"{dbl:000.00000}";
             }
         }

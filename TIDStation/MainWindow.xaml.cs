@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq.Expressions;
@@ -102,6 +103,13 @@ namespace TIDStation
             base.OnPreviewKeyDown(e);
         }
 
+        protected override void OnPreviewKeyUp(KeyEventArgs e)
+        {
+            if(e.Key == Key.Space)
+                ProcessKey(Key.None);
+            base.OnPreviewKeyUp(e);
+        }
+
         private static bool AllowEdit => Context.Instance.SelectedVfoA.Value ? Context.Instance.AllowEditA : Context.Instance.AllowEditB;
         private static ByteModel VfoChNum => Context.Instance.SelectedVfoA.Value ? Context.Instance.VfoChNumA : Context.Instance.VfoChNumB;
         private static double Step => Context.Instance.SelectedVfoA.Value ? Context.Instance.StepA : Context.Instance.StepB;
@@ -124,6 +132,12 @@ namespace TIDStation
             }
             switch (k)
             {
+                case Key.None:
+                    Comms.SimulateKey(0);
+                    break;
+                case Key.Space:
+                    Comms.SimulateKey(Context.Instance.SelectedVfo.Value ? 0x1a : 0x13);
+                    break;
                 case Key.Tab:
                     if(!Context.Instance.AnalyserMode.Value)
                         Context.Instance.SelectedVfo.Value = !Context.Instance.SelectedVfo.Value;
@@ -155,7 +169,9 @@ namespace TIDStation
                     {
                         double s = Step / 1000.0;
                         double rx = VfoRx.Value + (s * p);
+                        if (Comms.ShiftMode) rx -= 0.45568;
                         rx = Math.Round(rx / s) * s;
+                        if (Comms.ShiftMode) rx += 0.45568;
                         VfoRx.Value = rx;
                     }
                     break;
@@ -363,6 +379,8 @@ namespace TIDStation
 
         private void AppMode_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            HaltFA();
+            Context.Instance.AnalyserMode.Value = false;
             Context.Instance.ChannelModeVis.Value = ChannelMode.Equals(sender) ? Visibility.Visible : Visibility.Hidden;
             Context.Instance.PowerModeVis.Value = PowerMode.Equals(sender) ? Visibility.Visible : Visibility.Hidden;
             Context.Instance.FlashModeVis.Value = FlashMode.Equals(sender) ? Visibility.Visible : Visibility.Hidden;
@@ -716,14 +734,20 @@ namespace TIDStation
 
         private void AnalyzerMode_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (Context.Instance.ChannelModeVis.Value == Visibility.Visible ||
+                Context.Instance.PowerModeVis.Value == Visibility.Visible ||
+                Context.Instance.FlashModeVis.Value == Visibility.Visible ||
+                Context.Instance.TunerModeVis.Value == Visibility.Visible)
+                return;
             Context.Instance.AnalyserMode.Value = !Context.Instance.AnalyserMode.Value;
-            if(Context.Instance.AnalyserMode.Value)
+            if (Context.Instance.AnalyserMode.Value)
             {
                 Context.Instance.SelectedVfo.Value = false;
             }
             else
             {
                 StepsEntry_EntryComplete(sender, e);
+                HaltFA();
             }
         }
 
@@ -745,28 +769,32 @@ namespace TIDStation
                 }
             }
         }
-
+        // ⎇
         private void StartFA_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             using (faCts)
             {
                 faCts = new CancellationTokenSource();
                 SetFreqLabels();
-                Tasks.Watch = Comms.Scan(RX.Value, Step, (int)Context.Instance.AnalyserSteps.Value, ScanGraph, faCts.Token);
+                Comms.Scan(RX.Value, Step, (int)Context.Instance.AnalyserSteps.Value, ScanGraph, faCts.Token);
                 //Context.Instance.AnalyserRun.Value = true;
             }
         }
 
-        private void StopFA_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void HaltFA()
         {
             try { faCts?.Cancel(); } catch { }
-            //Context.Instance.AnalyserRun.Value = false;
+        }
+
+        private void StopFA_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            HaltFA();
         }
 
         private void OnceFA_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             SetFreqLabels();
-            Tasks.Watch = Comms.Scan(RX.Value, Step, (int)Context.Instance.AnalyserSteps.Value, ScanGraph, null);
+            Comms.Scan(RX.Value, Step, (int)Context.Instance.AnalyserSteps.Value, ScanGraph, null);
         }
 
         private DecimalEntry? stepEntry = null;
@@ -788,6 +816,21 @@ namespace TIDStation
             {
                 RX.Value = d;
             }
+        }
+
+        private void ShiftMode_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            Context.Instance.ShiftMode.Value = !Context.Instance.ShiftMode.Value;
+            Comms.SetShiftMode(Context.Instance.ShiftMode.Value);
+            VfoRxA.Refresh();
+            VfoTxA.Refresh();
+            VfoRxB.Refresh();
+            VfoTxB.Refresh();
+        }
+
+        private void PatchBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            PatchBox.SelectedIndex = -1;
         }
     }
 }

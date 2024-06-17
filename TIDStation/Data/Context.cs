@@ -31,6 +31,7 @@ namespace TIDStation.Data
 
     public class Context : INotifyPropertyChanged
     {
+        public static readonly Brush darkBrush = new SolidColorBrush(Color.FromArgb(0xff, 0x55, 0x55, 0x55));
         public static int Activator
         {
             get => 0;
@@ -65,6 +66,7 @@ namespace TIDStation.Data
         public ViewModel<double> Rssi { get; } = new(0.0);
         public BoolModel AnalyserMode { get; } = new(false);
         public BoolModel AnalyserRun { get; } = new(false);
+        public BoolModel ShiftMode { get; } = new(false);
         public ViewModel<double> AnalyserSteps { get; } = new(20.0);
         public ViewModel<string> AnalyserFLabel { get; } = new(string.Empty);
         public ViewModel<string> AnalyserHLabel { get; } = new(string.Empty);
@@ -98,9 +100,16 @@ namespace TIDStation.Data
         public ViewModel<string> FlashFile { get; } = new(string.Empty);
         public ViewModel<string> FlashError { get; } = new(string.Empty);
         public ViewModel<string> FlashComPort { get; } = new(string.Empty);
+        public ViewModel<int> State { get; } = new(0);
+        public Brush StateBrush => State.Value switch
+        {
+            0 => Brushes.LightGray,
+            1 => Brushes.LimeGreen,
+            _ => Brushes.OrangeRed,
+        };
 
 
-        public bool AllowEditA
+    public bool AllowEditA
         {
             get => allowEditA;
             private set
@@ -134,7 +143,7 @@ namespace TIDStation.Data
         public ViewModel<string> VfoChNumALabel { get; } = new("---");
         public ViewModel<bool> SelectedVfoA { get; } = new(true);
         public ViewModel<double> VfoOpacityA { get; } = new(1.0);
-        public ViewModel<SolidColorBrush> VfoBorderA { get; } = new(new SolidColorBrush(Color.FromArgb(0xff, 0xee, 0xee, 0xee)));
+        public ViewModel<Brush> VfoBorderA { get; } = new(new SolidColorBrush(Color.FromArgb(0xff, 0xee, 0xee, 0xee)));
         public ViewModel<string> VfoMarkerA { get; } = new("•");
         public BitModel BusyLockA { get; } = new(0x195d, 2);
         //public ViewModel<string> BusyLockLabelA { get; } = new("B");
@@ -563,8 +572,8 @@ namespace TIDStation.Data
                 VfoOpacityB.Value = SelectedVfoB.Value ? 1.0 : 0.75;
                 VfoMarkerA.Value = SelectedVfoA.Value ? "•" : string.Empty;
                 VfoMarkerB.Value = SelectedVfoB.Value ? "•" : string.Empty;
-                VfoBorderA.Value = SelectedVfoA.Value ? new SolidColorBrush(Color.FromArgb(0xff, 0xee, 0xee, 0xee)) : new SolidColorBrush(Color.FromArgb(0xff, 0x55, 0x55, 0x55));
-                VfoBorderB.Value = SelectedVfoB.Value ? new SolidColorBrush(Color.FromArgb(0xff, 0xee, 0xee, 0xee)) : new SolidColorBrush(Color.FromArgb(0xff, 0x55, 0x55, 0x55));
+                VfoBorderA.Value = SelectedVfoA.Value ? StateBrush : darkBrush;
+                VfoBorderB.Value = SelectedVfoB.Value ? StateBrush : darkBrush;
                 if (Ready)
                     TD.Update();
             };
@@ -573,6 +582,11 @@ namespace TIDStation.Data
                 LiveModeOpacity.Value = LiveMode.Value ? 1.0 : 0.5;
                 OfflineMode.Value = !LiveMode.Value;
                 OfflineModeOpacity.Value = LiveMode.Value ? 0.5 : 1.0;
+            };
+            State.PropertyChanged += (s, e) =>
+            {
+                OnPropertyChanged(nameof(StateBrush));
+                SelectedVfo.ForceUpdate++;
             };
             ComPort.PropertyChanged += (s, e) => SetComPort();
         }

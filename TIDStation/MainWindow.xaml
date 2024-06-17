@@ -104,7 +104,11 @@
                         <RowDefinition/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <ProgressBar  Value="{Binding Rssi.Value}" BorderThickness="0" Minimum="35" Maximum="281" BorderBrush="{x:Null}" Background="{x:Null}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="9*"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <ProgressBar  Value="{Binding Rssi.Value}" BorderThickness="0" Minimum="25" Maximum="270" BorderBrush="{x:Null}" Background="{x:Null}">
                         <ProgressBar.Foreground>
                             <LinearGradientBrush EndPoint="1,0.5" StartPoint="0,0.5">
                                 <GradientStop Color="#FF009999" Offset="0.002"/>
@@ -128,6 +132,9 @@
                                 1     |     3     |     5     |     7     |     9     |    20+    |    40+    |   60+ 
                         </TextBlock>
                     </Viewbox>
+                    <ui:PadButton Margin="3,0,0,0" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" PadKey="18" Background="Black">
+                        <ui:PadLabel FontSize="{Binding FontSize.Value[3]}">PTT</ui:PadLabel>
+                    </ui:PadButton>
                 </Grid>
             </Border>
             <Grid Grid.ColumnSpan="3" Grid.Column="1">
@@ -155,13 +162,14 @@
                 <Label x:Name="FlashMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding FlashOpc.Value}" Grid.Column="5" Content="⚡" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label x:Name="AnalyzerMode" Opacity="{Binding AnalyserMode.Opacity}" MouseLeftButtonDown="AnalyzerMode_MouseLeftButtonDown" Grid.Column="4" Content="📊" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label IsHitTestVisible="False" HorizontalContentAlignment="Right" Grid.Column="6" FontWeight="Bold" Content="TID Station" FontSize="{Binding FontSize.Value[4]}"/>
-                <Label IsHitTestVisible="False" HorizontalContentAlignment="Left" Grid.Column="8" FontWeight="Normal" Content="v0.35b nicsure 2024" FontSize="{Binding FontSize.Value[3.5]}"/>
-                <Label x:Name="ModulationSelect" MouseLeftButtonDown="ModulationSelect_MouseLeftButtonDown" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="10" Content="{Binding ModulationOverride.Value}" FontSize="{Binding FontSize.Value[5]}"/>
+                <Label IsHitTestVisible="False" HorizontalContentAlignment="Left" Grid.Column="8" FontWeight="Normal" Content="v0.37b nicsure 2024" FontSize="{Binding FontSize.Value[3.5]}"/>
+                <Label x:Name="ShiftMode" MouseLeftButtonDown="ShiftMode_MouseLeftButtonDown" Opacity="{Binding ShiftMode.Opacity}" Grid.Column="9" Content="⎇" FontSize="{Binding FontSize.Value[5]}"/>
+                <Label x:Name="ModulationSelect" MouseLeftButtonDown="ModulationSelect_MouseLeftButtonDown" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="10" Content="{Binding ModulationOverride.Value}" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label x:Name="MinimizeButton" MouseLeftButtonDown="MinimizeButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="12" Content="─" FontSize="{Binding FontSize.Value[6]}"/>
                 <Label x:Name="MaximizeButton" MouseLeftButtonDown="MaximizeButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="13" Content="▢" FontSize="{Binding FontSize.Value[5]}"/>
                 <Label x:Name="CloseButton" MouseLeftButtonDown="CloseButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="14" Content="❌" FontSize="{Binding FontSize.Value[4]}"/>
             </Grid>
-            <Border Opacity="{Binding VfoOpacityA.Value}" Background="Black" Grid.Column="1" Grid.Row="1" CornerRadius="10" BorderBrush="{Binding VfoBorderA.Value}" BorderThickness="1.5">
+            <Border Opacity="{Binding VfoOpacityA.Value}" Background="Black" Grid.Column="1" Grid.Row="1" CornerRadius="10" BorderBrush="{Binding VfoBorderA.Value}" BorderThickness="2">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="0"/>
@@ -246,7 +254,7 @@
                 </Grid>
             </Border>
 
-            <Border Opacity="{Binding VfoOpacityB.Value}" Background="Black" Grid.Column="3" Grid.Row="1" CornerRadius="10" BorderBrush="{Binding VfoBorderB.Value}" BorderThickness="1.5">
+            <Border Opacity="{Binding VfoOpacityB.Value}" Background="Black" Grid.Column="3" Grid.Row="1" CornerRadius="10" BorderBrush="{Binding VfoBorderB.Value}" BorderThickness="2">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="0"/>
@@ -1091,13 +1099,9 @@
                         </Button.Resources>
                     </Button>
                     <Label Grid.Row="4" Grid.Column="0" Margin="0,0,5,0" Content="Patches" FontSize="{Binding FontSize.Value[4.5]}" HorizontalContentAlignment="Right"/>
-                    <Label x:Name="PatchBox" FontWeight="Bold" Content="Select" Foreground="#333333" Background="AntiqueWhite" Grid.Row="4" Grid.Column="1" FontSize="{Binding FontSize.Value[4.5]}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,5,0,5">
-                        <Label.ContextMenu>
-                            <ContextMenu ItemsSource="{Binding PatchList}">
-                                
-                            </ContextMenu>
-                        </Label.ContextMenu>
-                    </Label>
+                    <ComboBox SelectionChanged="PatchBox_SelectionChanged" ItemsSource="{Binding PatchList}" x:Name="PatchBox" FontWeight="Bold" Background="AntiqueWhite" Grid.Row="4" Grid.Column="1" FontSize="{Binding FontSize.Value[4.5]}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,5,0,5">
+                    </ComboBox>
+                    <TextBlock IsHitTestVisible="False" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="{Binding FontSize.Value[5]}" Grid.Row="4" Grid.Column="1" Foreground="#888888">Select</TextBlock>
                     <Label Grid.Row="4" Grid.Column="2" Margin="0,0,5,0" Content="Serial Port" FontSize="{Binding FontSize.Value[4.5]}" HorizontalContentAlignment="Right"/>
                     <ComboBox Grid.Row="4" Grid.Column="3" SelectedItem="{Binding FlashComPort.Value}" FontSize="{Binding FontSize.Value[4.5]}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,5,0,5" ItemsSource="{Binding AvailPorts}" />
                     <ProgressBar x:Name="FlashBar" Background="#50000000" Value="{Binding FlashProgress.Value}" BorderThickness="2" Grid.Row="5" Grid.ColumnSpan="3" Margin="2,5,2,5"/>

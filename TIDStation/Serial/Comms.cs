@@ -35,10 +35,11 @@ namespace TIDStation.Serial
         private static readonly byte[] endSeq = [0x45];
         private static readonly byte[] okayAck = [0x06];
         private static readonly byte[] readReq = [0x52, 0x00, 0x00, 0x20];
-        private static readonly byte[] writePkt = [0x57, 0, 0, 0x20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                                      0, 0, 0, 0];
-        private static readonly object sync = new(), sync2 = new();
+        private static readonly byte[] writePkt = [0x57, 0, 0, 0x20,
+                                                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                   0];
+        private static readonly object sync = new(), sync2 = new(), sync3 = new();
         public static bool Ready => port != null;
         public static byte[] EEPROM => eeprom;
         public static byte[] BlankEEPROM { get; } = new byte[8192];
@@ -242,15 +243,15 @@ namespace TIDStation.Serial
             PreCommit(addr, data.Length);
         }
 
-        private static void SendEepromUpdate(int start, int end)
+        private static void SendEepromUpdate()
         {
             if (port != null)
             {
-                for (int j = start; j < end; j += 0x20)
+                for (int j = cstart; j < cend; j += 0x20)
                 {
                     if (rwProgress != null)
                     {
-                        double pg = (j / (double)end) * 100.0;
+                        double pg = (j / (double)cend) * 100.0;
                         rwProgress.Dispatcher.Invoke(() => rwProgress.Value = pg);
                     }
                     j.Write16BE(writePkt, 1);
@@ -260,160 +261,164 @@ namespace TIDStation.Serial
                         writePkt[0x24] += writePkt[i];
                     port.Send(writePkt);
                     if (!sync.Wait()) return;
-                }
-                if (modOverride < 0)
-                {
-                    modOverride = -modOverride;
-                    port.Send([0x52, (byte)(modOverride - 1), 0, 0x10]);
-                    if (!sync.Wait()) return;
-                }
-                port.Send(endSeq);
+                }                
             }
+            cstart = 0x2001;
+            cend = -1;
         }
 
-        private static int modOverride = 1;
-        public static void SetModulationOverride(int mod) => modOverride = -mod;
-
-        private static bool skip = false;
-        private static bool UpdatePending => modOverride < 0 || (cstart <= 0x2000 && cend > -1);
-        private static BarGraph? barGraph = null;
-
-        public static async Task DoScan(int fr1, int fr2, int fr3, int fr4, int st1, int st2, int steps, CancellationToken? token)
+        private static byte[] CustomPkt(params byte[] data)
         {
-            if (port != null && Context.Instance.LiveMode.Value)
+            byte[] cpkt = new byte[0x25];
+            cpkt[0] = 0x57;
+            Array.Copy(data, 0, cpkt, 4, data.Length);
+            for (int i = 4; i < 0x24; i++)
+                cpkt[0x24] += cpkt[i];
+            cpkt[0x24] ^= 0xff;
+            //Debug.WriteLine($"CS:{cpkt[0x24]}");
+            return cpkt;
+        }
+
+        public static void SetModulationOverride(int mod)
+        {
+            if (!LiveMode) return;
+            modulationOverride = mod;
+            changeModulation = true;
+            TD.Update();
+        }
+
+        public static void SetShiftMode(bool on)
+        {
+            if (!LiveMode) return;
+            shiftMode = on ? 0x80 : 0;
+            changeShiftMode = true;
+            TD.Update();
+        }
+
+        public static void SimulateKey(int key)
+        {
+            if (!LiveMode) return;
+            if (keyCode != key)
             {
-                using Task task = Task.Run(() =>
-                {
-                    lock (sync2)
-                    {
-                        lock (sync)
-                        {
-                            port.Send(compId);
-                            if (!sync.Wait()) return;
-                            port.Send(radioIdReq);
-                            if (!sync.Wait()) return;
-                            port.Send(okayAck);
-                            if (!sync.Wait()) return;
-                            port.Send([0x52, (byte)fr4, (byte)fr3, 0x11]);
-                            if (!sync.Wait()) return;
-                            port.Send([0x52, (byte)fr2, (byte)fr1, 0x12]);
-                            if (!sync.Wait()) return;
-                            port.Send([0x52, (byte)st2, (byte)st1, 0x13]);
-                            if (!sync.Wait()) return;
-                            do
-                            {
-                                port.Send([0x52, (byte)steps, (byte)steps, 0x14]);
-                                if (!sync.Wait()) return;
-                            }
-                            while (token != null && !token.Value.IsCancellationRequested);
-                            port.Send(endSeq);
-                            if (!sync.Wait()) return;
-                            port.Send(radioIdReq);
-                            if (!sync.Wait()) return;
-                        }
-                    }
-                });
-                await task;
+                keyCode = key;
+                pressKey = true;
+                TD.Update();
             }
         }
 
-        public static async Task Scan(double midFreq, double step, int steps, BarGraph bg, CancellationToken? token)
+        private static bool UpdatePending => changeShiftMode || startScan || changeModulation || (cstart <= 0x2000 && cend > -1);
+        private static BarGraph? barGraph = null;
+        private static byte scFrq0, scFrq1, scFrq2, scFrq3, scStp0, scStp1, scSteps;
+        private static CancellationToken? scToken = null;
+        public static bool LiveMode => Context.Instance.LiveMode.Value && port != null;
+
+        public static void Scan(double midFreq, double step, int steps, BarGraph bg, CancellationToken? token)
         {
-            Context.Instance.AnalyserRun.Value = true;
+            if(!LiveMode) return;
             barGraph = bg;
             double offset = (step / 1000.0) * Math.Abs(steps / 2);
             midFreq -= offset;
             int sf = (int)Math.Round(midFreq * 100000.0);
-            int fr4 = sf >> 24;
-            int fr3 = (sf >> 16) & 0xff;
-            int fr2 = (sf >> 8) & 0xff;
-            int fr1 = sf & 0xff;
             int st = (int)Math.Round(step * 100.0);
-            int st2 = (st >> 8) & 0xff;
-            int st1 = st & 0xff;
-            int sq = Context.Instance.Squelch.Value;
-            if (sq > 0)
-            {
-                Context.Instance.Squelch.Value = 0;
-                await Commit(true);
-            }            
-            if (port != null && Context.Instance.LiveMode.Value)
-            {
-                using Task task = Task.Run(() =>
-                {
-                    lock (sync2)
-                    {
-                        lock (sync)
-                        {
-                            port.Send(compId);
-                            if (!sync.Wait()) return;
-                            port.Send(radioIdReq);
-                            if (!sync.Wait()) return;
-                            port.Send(okayAck);
-                            if (!sync.Wait()) return;
-                            port.Send([0x52, (byte)fr4, (byte)fr3, 0x11]);
-                            if (!sync.Wait()) return;
-                            port.Send([0x52, (byte)fr2, (byte)fr1, 0x12]);
-                            if (!sync.Wait()) return;
-                            port.Send([0x52, (byte)st2, (byte)st1, 0x13]);
-                            if (!sync.Wait()) return;
-                            do
-                            {
-                                port.Send([0x52, (byte)steps, (byte)steps, 0x14]);
-                                if (!sync.Wait()) return;
-                            }
-                            while (token != null && !token.Value.IsCancellationRequested);
-                            port.Send(endSeq);
-                            if (!sync.Wait()) return;
-                            port.Send(radioIdReq);
-                            if (!sync.Wait()) return;
-                        }
-                    }
-                });
-                await task;
-                if (sq > 0)
-                {
-                    Thread.Sleep(200);
-                    Context.Instance.Squelch.Value = sq;
-                    await Commit(true);
-                }
-            }
-            Context.Instance.AnalyserRun.Value = false;
+            scFrq3 = (byte)(sf >> 24);
+            scFrq2 = (byte)((sf >> 16) & 0xff);
+            scFrq1 = (byte)((sf >> 8) & 0xff);
+            scFrq0 = (byte)(sf & 0xff);
+            scStp1 = (byte)((st >> 8) & 0xff);
+            scStp0 = (byte)(st & 0xff);
+            scSteps = (byte)steps;
+            scToken = token;
+            startScan = true;
+            TD.Update();
         }
 
+        private static bool changeModulation = false, startScan = false, changeShiftMode = false, pressKey = false;
+        private static int modulationOverride = 0, shiftMode = 0, keyCode = 0;
+        public static bool ShiftMode => shiftMode != 0;
 
-        public static async Task Commit(bool noScanCheck = false)
+        private static int commitCount = 0;
+        public static async Task Commit()
         {
-            if (!noScanCheck && Context.Instance.AnalyserRun.Value) return;
-            if (UpdatePending && port != null && Context.Instance.LiveMode.Value)
+            lock(sync3)
             {
-                if (skip) return;
-                skip = true;
-                int start = cstart;
-                int end = cend;
-                cstart = 0x2001;
-                cend = -1;
-                using Task task = Task.Run(() =>
+                if (commitCount > 1) return;
+                commitCount++;
+            }
+            using Task task = new(() =>
+            {
+                lock (sync2)
                 {
-                    lock (sync2)
+                    if (pressKey)
+                    {
+                        if (LiveMode)
+                        {
+                            lock (sync)
+                            {
+                                if (keyCode == 0)
+                                    port!.Send(0);
+                                else
+                                    port!.Send([0x50, 0x00, (byte)keyCode, 0x00, 0x00, 0x00, 0x00]);
+                                sync.Wait();
+                            }
+                        }
+                        pressKey = false;
+                    }
+                    if (!UpdatePending || !LiveMode) return;
+                    new Action(() =>
                     {
                         lock (sync)
                         {
-                            port.Send(compId);
+                            port!.Send(compId);
                             if (!sync.Wait()) return;
-                            port.Send(radioIdReq);
+                            port!.Send(radioIdReq);
                             if (!sync.Wait()) return;
-                            port.Send(okayAck);
+                            port!.Send(okayAck);
                             if (!sync.Wait()) return;
-                            SendEepromUpdate(start, end);
+                            SendEepromUpdate();
+                            if (changeModulation)
+                            {
+                                port!.Send(CustomPkt(0, (byte)(modulationOverride - 1)));
+                                if (!sync.Wait()) return;
+                                changeModulation = false;
+                            }
+                            if (startScan)
+                            {
+                                startScan = false;
+                                Context.Instance.AnalyserRun.Value = true;
+                                int cnt = 0;
+                                do
+                                {
+                                    cnt++;
+                                    port!.Send(CustomPkt(0x01, scFrq3, scFrq2, scFrq1, scFrq0, scStp1, scStp0, scSteps));
+                                    if (!sync.Wait(1000))
+                                    {
+                                        Debug.WriteLine($"Count B: {cnt}");
+                                        continue;
+                                    }
+                                }
+                                while (scToken != null && !scToken.Value.IsCancellationRequested);
+                                Context.Instance.AnalyserRun.Value = false;
+                            }
+                            if (changeShiftMode)
+                            {
+                                port!.Send(CustomPkt(0x02, (byte)shiftMode));
+                                if (!sync.Wait()) return;
+                                changeShiftMode = false;
+                            }
+                            port!.Send(endSeq);
                             if (!sync.Wait()) return;
-                            port.Send(radioIdReq);
+                            port!.Send(radioIdReq);
                             if (!sync.Wait()) return;
                         }
-                    }
-                });
-                await task;
-                skip = false;
+                    }).Invoke();
+                    Thread.Sleep(250);
+                }
+            });
+            task.Start();
+            await task;
+            lock(sync3)
+            {
+                commitCount--;
             }
         }
 
@@ -434,7 +439,9 @@ namespace TIDStation.Serial
                     if (rssiTime > 6000000)
                     {
                         lastRssi = -1;
-                        Context.Instance.Rssi.Value = 40;
+                        Context.Instance.Rssi.Value = 30;
+                        if (Context.Instance.State.Value != 2)
+                            Context.Instance.State.Value = 0;
                     }
                 }
             }
@@ -446,11 +453,16 @@ namespace TIDStation.Serial
             {
                 switch (state)
                 {
+                    case 99: // radio debug
+                        Debug.WriteLine($"Radio Debug Byte: {b:X2}");
+                        state = 0;
+                        break;
                     case 12: // freq scans
                         freqScans[stepCounter++] = b;
                         if (stepCounter >= stepCount)
                         {
                             state = 0;
+                            sync.SyncSignal();
                             barGraph?.Dispatcher.Invoke(() => barGraph.SetValues(stepCount, freqScans));
                         }
                         break;
@@ -469,13 +481,20 @@ namespace TIDStation.Serial
                         break;
                     case 10: // rssi noise level
                         //Debug.WriteLine($"RSSI:{rssi}  Noise:{b}");
-                        Context.Instance.Rssi.Value = b < 40 ? rssi : 40;
+                        Context.Instance.Rssi.Value = (rssi - b).Clamp(30, 270);
                         lastRssi = DateTime.Now.Ticks;
+                        Context.Instance.State.Value = 1;
                         state = 0;
                         break;
                     case 0: // idle
                         switch (b)
                         {
+                            case 0xF0:
+                                Context.Instance.State.Value = 0;
+                                break;
+                            case 0xF1:
+                                Context.Instance.State.Value = 2;
+                                break;
                             case 0xb4:
                                 state = 11;
                                 break;
@@ -484,6 +503,13 @@ namespace TIDStation.Serial
                                 break;
                             case 0x06: // okay, ack?
                                 sync.SyncSignal();
+                                break;
+                            case 0x07: // okay, ack? custom
+                                //Debug.WriteLine("Custom Ack");
+                                sync.SyncSignal();
+                                break;
+                            case 0x99: // radio debug
+                                state = 99;
                                 break;
                             case 0x50: // Radio Id?
                                 state = 1;
@@ -495,6 +521,8 @@ namespace TIDStation.Serial
                                 add = 0;
                                 len = 0;
                                 checkSum = 0;
+                                break;
+                            default:
                                 break;
                         }
                         break;
