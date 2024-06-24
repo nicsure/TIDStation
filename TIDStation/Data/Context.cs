@@ -41,9 +41,9 @@ namespace TIDStation.Data
                 _ = vfoTxB;
             }
         }
-        public static Context Instance 
-        { 
-            get 
+        public static Context Instance
+        {
+            get
             {
                 _ = Patches.List;
                 return instance;
@@ -109,7 +109,7 @@ namespace TIDStation.Data
         };
 
 
-    public bool AllowEditA
+        public bool AllowEditA
         {
             get => allowEditA;
             private set
@@ -139,7 +139,7 @@ namespace TIDStation.Data
         public BitsModel VfoChA { get; } = new(0x0ca2, 3);
         public ViewModel<string> VfoChALabel { get; } = new("VFO-A");
         public ByteModel VfoChNumA { get; } = new(0x0ca4);
-        public ViewModel<int> VfoChNumEnterA { get; } = new(0);
+        public ViewModel<int> VfoChNumEnterA { get; } = new(1);
         public ViewModel<string> VfoChNumALabel { get; } = new("---");
         public ViewModel<bool> SelectedVfoA { get; } = new(true);
         public ViewModel<double> VfoOpacityA { get; } = new(1.0);
@@ -186,7 +186,7 @@ namespace TIDStation.Data
         public BitsModel VfoChB { get; } = new(0x0ca3, 3);
         public ViewModel<string> VfoChBLabel { get; } = new("VFO-B");
         public ByteModel VfoChNumB { get; } = new(0x0ca5);
-        public ViewModel<int> VfoChNumEnterB { get; } = new(0);
+        public ViewModel<int> VfoChNumEnterB { get; } = new(1);
         public ViewModel<string> VfoChNumBLabel { get; } = new("---");
         public ViewModel<bool> SelectedVfoB { get; } = new(false);
         public ViewModel<double> VfoOpacityB { get; } = new(0.6);
@@ -284,6 +284,7 @@ namespace TIDStation.Data
         public BcdrModel UhfHigh { get; } = new(0x0cc6, 350.0, 660.0, 400.0, 520.0);
         public BcdfModel FmVfoFreq { get; } = new(0x1970, 76.0, 108.0);
         public BitsModel Brightness { get; } = new(0x0c9d, 0x7);
+        public ViewModel<string> Peek { get; } = new(string.Empty);
 
         public ViewModel<string> UhfAdjLab { get; } = new("0 Hz");
         public ViewModel<string> VhfAdjLab { get; } = new("0 Hz");
@@ -393,7 +394,10 @@ namespace TIDStation.Data
                 if (VfoChA.Value == 0)
                     ApplyChannelA(0);
                 else
+                {
                     ApplyChannelA(VfoChNumA.Value);
+                    VfoChNumEnterA.Value = VfoChNumA.Value;
+                }
                 suspend = false;
                 if (Ready) TD.Update();
             };
@@ -497,7 +501,10 @@ namespace TIDStation.Data
                 if (VfoChB.Value == 0)
                     ApplyChannelB(0);
                 else
+                {
                     ApplyChannelB(VfoChNumB.Value);
+                    VfoChNumEnterB.Value = VfoChNumB.Value;
+                }
                 suspend = false;
                 if (Ready) TD.Update();
             };
@@ -587,6 +594,19 @@ namespace TIDStation.Data
             {
                 OnPropertyChanged(nameof(StateBrush));
                 SelectedVfo.ForceUpdate++;
+            };
+            Peek.Momentary = true;
+            Peek.PropertyChanged += (s, e) => 
+            {
+                if (Peek.Value.Length > 0)
+                {
+                    int i;
+                    try { i = Convert.ToInt32(Peek.Value, 16); } catch { i = -1; }
+                    if (i > -1)
+                    {
+                        Comms.ReadExtMem(i);
+                    }
+                }
             };
             ComPort.PropertyChanged += (s, e) => SetComPort();
         }

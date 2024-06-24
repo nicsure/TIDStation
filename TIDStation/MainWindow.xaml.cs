@@ -224,6 +224,7 @@ namespace TIDStation
         private void FqStpLabA_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             Context.Instance.FreqStepA.Value = (Context.Instance.FreqStepA.Value + 1) % 7;
+            Context.Instance.FreqStepOverrideA.Value = 0;
         }
 
         private void ScLabA_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -313,6 +314,7 @@ namespace TIDStation
         private void FqStpLabB_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             Context.Instance.FreqStepB.Value = (Context.Instance.FreqStepB.Value + 1) % 7;
+            Context.Instance.FreqStepOverrideB.Value = 0;
         }
 
         private void ScLabB_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -753,6 +755,31 @@ namespace TIDStation
 
         private CancellationTokenSource? faCts = null;
 
+        //private byte[] lastExtMem = [];
+        
+        /*
+        private void ExtMemScan()
+        {
+            byte[]? b = Comms.GetExtMem();
+            if (b != null)
+            {
+                if (lastExtMem.Length > 0)
+                {
+                    for (int i = 0; i < b.Length; i++)
+                    {
+                        if (lastExtMem[i] != b[i])
+                        {
+                            Debug.WriteLine($"{i:X4} - OLD:{lastExtMem[i]:X2} NEW:{b[i]:X2}");
+                        }
+                    }
+                }
+                lastExtMem = b;
+            }
+            else
+                Debug.WriteLine("Read Mem Failed.");
+        }
+        */
+
         private void SetFreqLabels()
         {
             double rx = RX.Value;
@@ -791,8 +818,14 @@ namespace TIDStation
             HaltFA();
         }
 
+        private void JetScan_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            Comms.JetScan(ScanGraph);
+        }
+
         private void OnceFA_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            //Comms.JetScan(ScanGraph);
             SetFreqLabels();
             Comms.Scan(RX.Value, Step, (int)Context.Instance.AnalyserSteps.Value, ScanGraph, null);
         }
@@ -811,15 +844,32 @@ namespace TIDStation
         private void Scanner_BarClicked(object? sender, EventArgs e)
         {
             try { faCts?.Cancel(); } catch { }
-            //Context.Instance.AnalyserRun.Value = false;
-            if (sender is Grid grid && grid.Tag is string s && double.TryParse(s, out double d))
+            if (sender is Grid grid)
             {
-                RX.Value = d;
+                if (grid.Tag is string s)
+                {
+                    if (double.TryParse(s, out double d))
+                    {
+                        TD.Suspend();
+                        Context.Instance.VfoChA.Value = 0;
+                        TD.Resume();
+                        RX.Value = d;
+                    }
+                }
+                else
+                if (grid.Tag is Channel chan)
+                {
+                    TD.Suspend();
+                    Context.Instance.VfoChA.Value = 1;
+                    TD.Resume();
+                    Context.Instance.VfoChNumEnterA.Value = chan.Number;
+                }
             }
         }
 
         private void ShiftMode_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            //Comms.ReadExtMem();
             Context.Instance.ShiftMode.Value = !Context.Instance.ShiftMode.Value;
             Comms.SetShiftMode(Context.Instance.ShiftMode.Value);
             VfoRxA.Refresh();

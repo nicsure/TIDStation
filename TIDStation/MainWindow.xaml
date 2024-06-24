@@ -162,7 +162,7 @@
                 <Label x:Name="FlashMode" MouseLeftButtonDown="AppMode_MouseLeftButtonDown" Opacity="{Binding FlashOpc.Value}" Grid.Column="5" Content="⚡" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label x:Name="AnalyzerMode" Opacity="{Binding AnalyserMode.Opacity}" MouseLeftButtonDown="AnalyzerMode_MouseLeftButtonDown" Grid.Column="4" Content="📊" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label IsHitTestVisible="False" HorizontalContentAlignment="Right" Grid.Column="6" FontWeight="Bold" Content="TID Station" FontSize="{Binding FontSize.Value[4]}"/>
-                <Label IsHitTestVisible="False" HorizontalContentAlignment="Left" Grid.Column="8" FontWeight="Normal" Content="v0.37b nicsure 2024" FontSize="{Binding FontSize.Value[3.5]}"/>
+                <Label IsHitTestVisible="False" HorizontalContentAlignment="Left" Grid.Column="8" FontWeight="Normal" Content="v0.37.1b nicsure 2024" FontSize="{Binding FontSize.Value[3.5]}"/>
                 <Label x:Name="ShiftMode" MouseLeftButtonDown="ShiftMode_MouseLeftButtonDown" Opacity="{Binding ShiftMode.Opacity}" Grid.Column="9" Content="⎇" FontSize="{Binding FontSize.Value[5]}"/>
                 <Label x:Name="ModulationSelect" MouseLeftButtonDown="ModulationSelect_MouseLeftButtonDown" FontWeight="Bold" Grid.ColumnSpan="2" Grid.Column="10" Content="{Binding ModulationOverride.Value}" FontSize="{Binding FontSize.Value[4]}"/>
                 <Label x:Name="MinimizeButton" MouseLeftButtonDown="MinimizeButton_MouseLeftButtonDown" FontWeight="Bold" Grid.Column="12" Content="─" FontSize="{Binding FontSize.Value[6]}"/>
@@ -250,7 +250,7 @@
                     <Label x:Name="VfoChASel" MouseLeftButtonDown="VfoChASel_MouseLeftButtonDown" Grid.Row="4" Grid.Column="4" Grid.ColumnSpan="4" FontSize="{Binding FontSize.Value[5]}" Content="{Binding VfoChALabel.Value}"/>
                     <Label x:Name="ScLabA" IsHitTestVisible="{Binding AllowEditA}" MouseLeftButtonDown="ScLabA_MouseLeftButtonDown" Grid.Row="4" Grid.Column="2" Content="S" Opacity="{Binding ScrambleA.Opacity}" FontSize="{Binding FontSize.Value[5.75]}"/>
 
-                    <ui:NumEntry Visibility="{Binding DenyEditA}" x:Name="ChannelEntryA" Grid.Row="4" Grid.Column="3"  Value="{Binding VfoChNumEnterA.Value, Mode=TwoWay}" FontSize="{Binding FontSize.Value[4.5]}" Content="{Binding VfoChNumALabel.Value, Mode=TwoWay}"/>
+                    <ui:NumEntry Min="1" Max="199" Visibility="{Binding DenyEditA}" x:Name="ChannelEntryA" Grid.Row="4" Grid.Column="3"  Value="{Binding VfoChNumEnterA.Value, Mode=TwoWay}" FontSize="{Binding FontSize.Value[4.5]}" Content="{Binding VfoChNumALabel.Value, Mode=TwoWay}"/>
                 </Grid>
             </Border>
 
@@ -332,7 +332,7 @@
                     <Label x:Name="VfoChBSel" MouseLeftButtonDown="VfoChBSel_MouseLeftButtonDown" Grid.Row="4" Grid.Column="4" Grid.ColumnSpan="4" FontSize="{Binding FontSize.Value[5]}" Content="{Binding VfoChBLabel.Value}"/>
                     <Label x:Name="ScLabB" IsHitTestVisible="{Binding AllowEditB}" MouseLeftButtonDown="ScLabB_MouseLeftButtonDown" Grid.Row="4" Grid.Column="2" Content="S" Opacity="{Binding ScrambleB.Opacity}" FontSize="{Binding FontSize.Value[5.75]}"/>
 
-                    <ui:NumEntry Visibility="{Binding DenyEditB}" x:Name="ChannelEntryB" Grid.Row="4" Grid.Column="3"  Value="{Binding VfoChNumEnterB.Value, Mode=TwoWay}" FontSize="{Binding FontSize.Value[4.5]}" Content="{Binding VfoChNumBLabel.Value}"/>
+                    <ui:NumEntry Min="1" Max="199" Visibility="{Binding DenyEditB}" x:Name="ChannelEntryB" Grid.Row="4" Grid.Column="3"  Value="{Binding VfoChNumEnterB.Value, Mode=TwoWay}" FontSize="{Binding FontSize.Value[4.5]}" Content="{Binding VfoChNumBLabel.Value}"/>
                 </Grid>
             </Border>
 
@@ -348,14 +348,22 @@
                         <ColumnDefinition/>
                         <ColumnDefinition/>
                         <ColumnDefinition/>
+                        <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
-                    <Label Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" FontSize="{Binding FontSize.Value[3]}" Content="{Binding AnalyserHLabel.Value}" Foreground="Yellow" />
-                    <Label Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="2" FontSize="{Binding FontSize.Value[3]}" Content="{Binding AnalyserFLabel.Value}" Foreground="Orange" />
-                    <Label x:Name="StartFA" MouseLeftButtonDown="StartFA_MouseLeftButtonDown" IsHitTestVisible="{Binding AnalyserRun.Not}" Opacity="{Binding AnalyserRun.RevOpacity}" HorizontalAlignment="Center" Grid.Row="3" Grid.Column="0" FontSize="{Binding FontSize.Value[4]}" Content="START"/>
-                    <Label x:Name="StopFA" MouseLeftButtonDown="StopFA_MouseLeftButtonDown" IsHitTestVisible="{Binding AnalyserRun.Value}" Opacity="{Binding AnalyserRun.Opacity}" HorizontalAlignment="Center" Grid.Row="3" Grid.Column="1" FontSize="{Binding FontSize.Value[4]}" Content="STOP"/>
-                    <Label x:Name="OnceFA" MouseLeftButtonDown="OnceFA_MouseLeftButtonDown" IsHitTestVisible="{Binding AnalyserRun.Not}" Opacity="{Binding AnalyserRun.RevOpacity}" HorizontalAlignment="Center" Grid.Row="3" Grid.Column="2" FontSize="{Binding FontSize.Value[4]}" Content="ONCE"/>
-                    <ui:DecimalEntry MouseLeftButtonDown="StepsEntry_MouseLeftButtonDown" x:Name="StepsEntry" IsHitTestVisible="{Binding AnalyserRun.Not}" Opacity="{Binding AnalyserRun.RevOpacity}" DecimalPlaces="0" WholeDigits="3" Minimum="10" Maximum="200" Foreground="Green" HorizontalAlignment="Center" Grid.Row="3" Grid.Column="3" FontSize="{Binding FontSize.Value[4]}" Value="{Binding AnalyserSteps.Value, Mode=TwoWay}"/>
-                    <ui:BarGraph Grid.Row="1" Grid.ColumnSpan="4" x:Name="ScanGraph" BarCount="{Binding AnalyserSteps.Value}" />
+                    <Grid Grid.ColumnSpan="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Row="0" Grid.Column="0" FontSize="{Binding FontSize.Value[3]}" Content="{Binding AnalyserHLabel.Value}" Foreground="Yellow" />
+                        <Label Grid.Row="0" Grid.Column="1" FontSize="{Binding FontSize.Value[3]}" Content="{Binding AnalyserFLabel.Value}" Foreground="Orange" />
+                    </Grid>
+                    <Label x:Name="StartFA" MouseLeftButtonDown="StartFA_MouseLeftButtonDown" IsHitTestVisible="{Binding AnalyserRun.Not}" Opacity="{Binding AnalyserRun.RevOpacity}" HorizontalAlignment="Center" Grid.Row="3" Grid.Column="0" FontSize="{Binding FontSize.Value[3.5]}" Content="START"/>
+                    <Label x:Name="StopFA" MouseLeftButtonDown="StopFA_MouseLeftButtonDown" IsHitTestVisible="{Binding AnalyserRun.Value}" Opacity="{Binding AnalyserRun.Opacity}" HorizontalAlignment="Center" Grid.Row="3" Grid.Column="1" FontSize="{Binding FontSize.Value[3.5]}" Content="STOP"/>
+                    <Label x:Name="OnceFA" MouseLeftButtonDown="OnceFA_MouseLeftButtonDown" IsHitTestVisible="{Binding AnalyserRun.Not}" Opacity="{Binding AnalyserRun.RevOpacity}" HorizontalAlignment="Center" Grid.Row="3" Grid.Column="2" FontSize="{Binding FontSize.Value[3.5]}" Content="ONCE"/>
+                    <Label x:Name="JetScan" MouseLeftButtonDown="JetScan_MouseLeftButtonDown" IsHitTestVisible="{Binding AnalyserRun.Not}" Opacity="{Binding AnalyserRun.RevOpacity}" HorizontalAlignment="Center" Grid.Row="3" Grid.Column="3" FontSize="{Binding FontSize.Value[3.5]}" Content="JET"/>
+                    <ui:DecimalEntry MouseLeftButtonDown="StepsEntry_MouseLeftButtonDown" x:Name="StepsEntry" IsHitTestVisible="{Binding AnalyserRun.Not}" Opacity="{Binding AnalyserRun.RevOpacity}" DecimalPlaces="0" WholeDigits="3" Minimum="10" Maximum="200" Foreground="Green" HorizontalAlignment="Center" Grid.Row="3" Grid.Column="4" FontSize="{Binding FontSize.Value[3.5]}" Value="{Binding AnalyserSteps.Value, Mode=TwoWay}"/>
+                    <ui:BarGraph Grid.Row="1" Grid.ColumnSpan="5" x:Name="ScanGraph" BarCount="{Binding AnalyserSteps.Value}" />
                 </Grid>
             </Border>
 
@@ -596,6 +604,7 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="80"/>
                             </Grid.RowDefinitions>
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="1" Content="Squelch" FontSize="{Binding FontSize.Value[4]}" />
@@ -638,7 +647,7 @@
                             <ui:Option Tag="Single VFO Mode" Grid.Column="1" Grid.Row="13" Model="{Binding Sync}" Type="bool" Options="On;False, Off;True" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="14" Content="Mic Gain" FontSize="{Binding FontSize.Value[4]}" />
-                            <ui:Option Tag="Microphone Gain" Grid.Column="1" Grid.Row="14" Model="{Binding MicGain}" Type="int" Options="0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="Microphone Gain" Grid.Column="1" Grid.Row="14" Model="{Binding MicGain}" Type="int" Options="0,1,2,3,4,5,6,7,8,9" FontSize="{Binding FontSize.Value[4]}" />
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="15" Content="Breath LED" FontSize="{Binding FontSize.Value[4]}" />
                             <ui:Option Tag="Breath LED Indicator" Grid.Column="1" Grid.Row="15" Model="{Binding BreathLed}" Type="int" Options="Off;0, 5 s;1, 10 s;2, 15 s;3, 30 s;4" FontSize="{Binding FontSize.Value[4]}" />
@@ -791,6 +800,9 @@
 
                             <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="63" Content="Brightness" FontSize="{Binding FontSize.Value[4]}" />
                             <ui:Option Tag="LCD Brightness" Grid.Column="1" Grid.Row="63" Model="{Binding Brightness}" Type="int" Options="Dim;4, 2;3, 3;2, 4;1, Bright;0" FontSize="{Binding FontSize.Value[4]}" />
+
+                            <Label Foreground="#dddddd" FontWeight="Bold" Grid.Column="0" Grid.Row="64" Content="Peek" FontSize="{Binding FontSize.Value[4]}" />
+                            <ui:Option Tag="ExtMem Viewer" Grid.Column="1" Grid.Row="64" Model="{Binding Peek}" Type="string" Options="hexad" FontSize="{Binding FontSize.Value[4]}" />
 
                         </Grid>
                     </ScrollViewer>

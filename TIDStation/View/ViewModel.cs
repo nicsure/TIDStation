@@ -86,6 +86,7 @@ namespace TIDStation.View
 
     public class ViewModel<T> : ViewModel
     {
+        public bool Momentary { get; set; } = false;
         public T Default { get; private set; }
         public T Value
         {
@@ -96,6 +97,8 @@ namespace TIDStation.View
                 {
                     val = value;
                     OnPropertyChanged();
+                    if (Momentary)
+                        val = Default;
                 }
             }
         }

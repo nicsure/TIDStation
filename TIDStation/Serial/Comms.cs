@@ -59,7 +59,7 @@ namespace TIDStation.Serial
         public static int GetDcsAt(int addr)
         {
             if (eeprom[addr + 1] < 0x80) return 10000 + GetBcdAt(addr, 2);
-            string s = $"{eeprom[addr + 1]&0x3f:X2}{eeprom[addr]:X2}";
+            string s = $"{eeprom[addr + 1] & 0x3f:X2}{eeprom[addr]:X2}";
             if (int.TryParse(s, out int i))
                 return eeprom[addr + 1] >= 0xc0 ? -i : i;
             else
@@ -206,9 +206,11 @@ namespace TIDStation.Serial
                                 return true;
                             }
                         }
-                        temp.Close();
-                        Context.Instance.ComPort.Value = "Offline";
-                        return false;
+                        port = temp;
+                        return true;
+                        //temp.Close();
+                        //Context.Instance.ComPort.Value = "Offline";
+                        //return false;
                     }
                 }
             });
@@ -261,7 +263,7 @@ namespace TIDStation.Serial
                         writePkt[0x24] += writePkt[i];
                     port.Send(writePkt);
                     if (!sync.Wait()) return;
-                }                
+                }
             }
             cstart = 0x2001;
             cend = -1;
@@ -306,7 +308,7 @@ namespace TIDStation.Serial
             }
         }
 
-        private static bool UpdatePending => changeShiftMode || startScan || changeModulation || (cstart <= 0x2000 && cend > -1);
+        private static bool UpdatePending => jetScan || changeShiftMode || startScan || changeModulation || (cstart <= 0x2000 && cend > -1);
         private static BarGraph? barGraph = null;
         private static byte scFrq0, scFrq1, scFrq2, scFrq3, scStp0, scStp1, scSteps;
         private static CancellationToken? scToken = null;
@@ -314,7 +316,7 @@ namespace TIDStation.Serial
 
         public static void Scan(double midFreq, double step, int steps, BarGraph bg, CancellationToken? token)
         {
-            if(!LiveMode) return;
+            if (!LiveMode) return;
             barGraph = bg;
             double offset = (step / 1000.0) * Math.Abs(steps / 2);
             midFreq -= offset;
@@ -332,11 +334,39 @@ namespace TIDStation.Serial
             TD.Update();
         }
 
-        private static bool changeModulation = false, startScan = false, changeShiftMode = false, pressKey = false;
-        private static int modulationOverride = 0, shiftMode = 0, keyCode = 0;
+        public static void JetScan(BarGraph bg)
+        {
+            barGraph = bg;
+            jetScan = true;
+            TD.Update();
+        }
+
+        private static bool jetScan = false, readExtMem = false, changeModulation = false, startScan = false, changeShiftMode = false, pressKey = false;
+        private static int modulationOverride = 0, shiftMode = 0, keyCode = 0, extMemAddr = -1;
         public static bool ShiftMode => shiftMode != 0;
 
         private static int commitCount = 0;
+
+        private static readonly byte[] extMem = new byte[0x500];
+        //private static int extMemCnt = 0;
+        public static byte[] ExtMem
+        {
+            get
+            {
+                byte[] b = new byte[0x500];
+                Array.Copy(extMem, 0, b, 0, 0x500);
+                return b;
+            }
+        }
+
+        public static void ReadExtMem(int addr = -1)
+        {
+            extMemAddr = addr;
+            readExtMem = true;
+            TD.Update();
+        }
+
+        private static byte[]? prevExtMem = null;
         public static async Task Commit()
         {
             lock(sync3)
@@ -348,51 +378,137 @@ namespace TIDStation.Serial
             {
                 lock (sync2)
                 {
-                    if (pressKey)
+                    //ignoreUnprompted = true;
+                    bool okay = false;
+                    for (bool once = true; once; once = false)
                     {
-                        if (LiveMode)
+                        if (readExtMem)
                         {
-                            lock (sync)
+                            readExtMem = false;
+                            if (LiveMode)
                             {
-                                if (keyCode == 0)
-                                    port!.Send(0);
-                                else
-                                    port!.Send([0x50, 0x00, (byte)keyCode, 0x00, 0x00, 0x00, 0x00]);
-                                sync.Wait();
+                                lock (sync)
+                                {
+                                    if (extMemAddr > 0)
+                                    {
+                                        Debug.WriteLine($"Reading {extMemAddr:X4}");
+                                        byte hi = (byte)((extMemAddr >> 8) & 0xff);
+                                        byte lo = (byte)(extMemAddr & 0xff);
+                                        port!.Send([0x50, 0x01, hi, lo, 0x00, 0x00, 0x00]);
+                                        if (!sync.Wait()) break;
+                                    }
+                                    else
+                                    {
+                                        Debug.WriteLine($"Reading All Extmem");
+                                        port!.Send([0x50, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00]);
+                                        if (!sync.Wait()) break;
+                                        byte[] now = ExtMem;
+                                        if (prevExtMem != null)
+                                        {
+                                            for (int i = 0; i < 0x500; i++)
+                                            {
+                                                if (now[i] != prevExtMem[i])
+                                                {
+                                                    Debug.WriteLine($"Addr:{i:X4} was:{prevExtMem[i]:X2} now:{now[i]:X2}");
+                                                }
+                                            }
+                                        }
+                                        prevExtMem = now;
+                                    }
+                                }
                             }
                         }
-                        pressKey = false;
-                    }
-                    if (!UpdatePending || !LiveMode) return;
-                    new Action(() =>
-                    {
+                        if (pressKey)
+                        {
+                            pressKey = false;
+                            if (LiveMode)
+                            {
+                                lock (sync)
+                                {
+                                    if (keyCode != 0)
+                                        port!.Send([0x50, 0x00, (byte)keyCode, 0x00, 0x00, 0x00, 0x00]);
+                                    else
+                                        port!.Send(0);
+                                    if (!sync.Wait()) break;
+                                }
+                            }
+                        }
+                        if (!UpdatePending || !LiveMode)
+                        {
+                            changeModulation = false;
+                            startScan = false;
+                            changeShiftMode = false;
+                            jetScan = false;
+                            return;
+                        }
                         lock (sync)
                         {
                             port!.Send(compId);
-                            if (!sync.Wait()) return;
+                            if (!sync.Wait()) break;
                             port!.Send(radioIdReq);
-                            if (!sync.Wait()) return;
+                            if (!sync.Wait()) break;
                             port!.Send(okayAck);
-                            if (!sync.Wait()) return;
+                            if (!sync.Wait()) break;
                             SendEepromUpdate();
                             if (changeModulation)
                             {
                                 port!.Send(CustomPkt(0, (byte)(modulationOverride - 1)));
-                                if (!sync.Wait()) return;
+                                if (!sync.Wait()) break;
                                 changeModulation = false;
+                            }
+                            if(jetScan)
+                            {
+                                jetScan = false;
+                                Context.Instance.AnalyserRun.Value = true;
+                                List<Channel> active = [];
+                                foreach(var ch in Channel.Mem)
+                                {
+                                    if (ch.RX.Length == 0) continue;
+                                    active.Add(ch);
+                                }
+                                for (int i = 0; i < active.Count; i += 7)
+                                {
+                                    stepCount = i;
+                                    byte[] pckFr = Enumerable.Repeat((byte)0x03, 29).ToArray();
+                                    for (int j = 0; j < 7; j++)
+                                    {
+                                        int chi = i + j;
+                                        if (chi < active.Count)
+                                        {
+                                            double fr = double.TryParse(active[chi].RX, out double d) ? d : 996.0;
+                                            int fri = (int)Math.Round(fr * 100000.0);
+                                            int bi = (j * 4) + 1;
+                                            pckFr[bi] = (byte)(fri >> 24);
+                                            pckFr[bi + 1] = (byte)((fri >> 16) & 0xff);
+                                            pckFr[bi + 2] = (byte)((fri >> 8) & 0xff);
+                                            pckFr[bi + 3] = (byte)(fri & 0xff);
+                                        }
+                                    }
+                                    port!.Send(CustomPkt(pckFr));
+                                    if (!sync.Wait())
+                                    {
+                                        Context.Instance.AnalyserRun.Value = false;
+                                        break;
+                                    }
+                                }
+                                List<(Channel, int)> scanResult = [];
+                                for (int i = 0; i < active.Count; i++)
+                                {
+                                    if (freqScans[i] < 0x30)
+                                        scanResult.Add((active[i], freqScans[i]));
+                                }
+                                barGraph?.Dispatcher.Invoke(() => barGraph.SetJetScanValues(scanResult));
+                                Context.Instance.AnalyserRun.Value = false;
                             }
                             if (startScan)
                             {
                                 startScan = false;
                                 Context.Instance.AnalyserRun.Value = true;
-                                int cnt = 0;
                                 do
                                 {
-                                    cnt++;
                                     port!.Send(CustomPkt(0x01, scFrq3, scFrq2, scFrq1, scFrq0, scStp1, scStp0, scSteps));
-                                    if (!sync.Wait(1000))
+                                    if (!sync.Wait(2000))
                                     {
-                                        Debug.WriteLine($"Count B: {cnt}");
                                         continue;
                                     }
                                 }
@@ -402,21 +518,38 @@ namespace TIDStation.Serial
                             if (changeShiftMode)
                             {
                                 port!.Send(CustomPkt(0x02, (byte)shiftMode));
-                                if (!sync.Wait()) return;
+                                if (!sync.Wait()) break;
                                 changeShiftMode = false;
                             }
                             port!.Send(endSeq);
-                            if (!sync.Wait()) return;
+                            if (!sync.Wait()) break;
                             port!.Send(radioIdReq);
-                            if (!sync.Wait()) return;
+                            if (!sync.Wait()) break;
                         }
-                    }).Invoke();
-                    Thread.Sleep(250);
+                        okay = true;
+                        Thread.Sleep(250);
+                    }
+                    if(!okay && LiveMode)
+                    {
+                        Debug.WriteLine("Desync");
+                        lock (sync)
+                        {
+                            int to = 0;
+                            bool sok;
+                            do
+                            {
+                                port!.Send([0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+                            }
+                            while (!(sok = sync.Wait(150)) && to++ < 10);
+                            Debug.WriteLine(sok ? "Resynced" : "Unable to Resync");
+                        }
+                    }
+                    //ignoreUnprompted = false;
                 }
             });
             task.Start();
             await task;
-            lock(sync3)
+            lock (sync3)
             {
                 commitCount--;
             }
@@ -447,15 +580,38 @@ namespace TIDStation.Serial
             }
         }
 
+        private static int extMemCnt = 0;
+        private static int lastdebug = 0;
         private static void Received(byte[] data)
         {
             foreach (byte b in data)
             {
                 switch (state)
                 {
+                    case 100: // ext mem data
+                        extMem[extMemCnt++] = b;
+                        if (extMemCnt >= 0x500)
+                        {
+                            Debug.WriteLine("Read All Ext Mem");
+                            sync.SyncSignal();
+                            state = 0;
+                        }
+                        break;
                     case 99: // radio debug
-                        Debug.WriteLine($"Radio Debug Byte: {b:X2}");
+                        if (b != lastdebug)
+                        {
+                            Debug.WriteLine($"Radio Debug Byte: {b:X2}");
+                            lastdebug = b;
+                        }
                         state = 0;
+                        break;
+                    case 13: // jetscan
+                        freqScans[stepCount + stepCounter++] = b;
+                        if (stepCounter >= 7)
+                        {
+                            state = 0;
+                            sync.SyncSignal();
+                        }
                         break;
                     case 12: // freq scans
                         freqScans[stepCounter++] = b;
@@ -480,7 +636,7 @@ namespace TIDStation.Serial
                         state = 10;
                         break;
                     case 10: // rssi noise level
-                        //Debug.WriteLine($"RSSI:{rssi}  Noise:{b}");
+                        Debug.WriteLine($"RSSI:{rssi}  Noise:{b}");
                         Context.Instance.Rssi.Value = (rssi - b).Clamp(30, 270);
                         lastRssi = DateTime.Now.Ticks;
                         Context.Instance.State.Value = 1;
@@ -498,6 +654,10 @@ namespace TIDStation.Serial
                             case 0xb4:
                                 state = 11;
                                 break;
+                            case 0xb5:
+                                stepCounter = 0;
+                                state = 13;
+                                break;
                             case 0xa4:
                                 state = 8;
                                 break;
@@ -510,6 +670,10 @@ namespace TIDStation.Serial
                                 break;
                             case 0x99: // radio debug
                                 state = 99;
+                                break;
+                            case 0x9a: // read all ext mem
+                                state = 100;
+                                extMemCnt = 0;
                                 break;
                             case 0x50: // Radio Id?
                                 state = 1;

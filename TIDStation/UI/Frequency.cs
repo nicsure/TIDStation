@@ -37,7 +37,7 @@ namespace TIDStation.UI
         private void EndInput()
         {
             double clampLo = 18.0 + (Comms.ShiftMode ? shift : 0.0);
-            double clampHi = Comms.ShiftMode ? 999.99999 : 660.0;
+            double clampHi = Comms.ShiftMode ? 999.99999 : 670.0;
             double fr = (double.TryParse(Text, out double d) ? d : Value + (Comms.ShiftMode ? shift : 0.0)).Clamp(clampLo, clampHi);
             if (Comms.ShiftMode) fr -= shift;
             Value = fr;
@@ -65,11 +65,34 @@ namespace TIDStation.UI
             Text = fr.ToString("000.00000");
         }
 
+        private long lastKey = -1;
+        private bool timing = false;
+        private async Task Timer()
+        {
+            lastKey = DateTime.Now.Ticks;
+            if (timing) return;
+            timing = true;
+            do
+            {
+                await Task.Delay(20);
+                if (timing)
+                {
+                    long span = (DateTime.Now.Ticks - lastKey) / 10000L;
+                    if (span > InputTimeout)
+                    {
+                        KeyIn(Key.Escape);
+                    }
+                }
+            }
+            while (timing);
+        }
+
         public void KeyIn(Key k)
         {
             if (inputMode)
             {
-                switch(k)
+                Tasks.Watch = Timer();
+                switch (k)
                 {
                     case Key.Escape:
                         Text = string.Empty;
@@ -176,7 +199,7 @@ namespace TIDStation.UI
             set { SetValue(InputTimeoutProperty, value); }
         }
         public static readonly DependencyProperty InputTimeoutProperty =
-            DependencyProperty.Register("InputTimeout", typeof(int), typeof(Frequency), new PropertyMetadata(3000));
+            DependencyProperty.Register("InputTimeout", typeof(int), typeof(Frequency), new PropertyMetadata(5000));
 
         public double Value
         {

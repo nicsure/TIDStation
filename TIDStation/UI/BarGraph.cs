@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using TIDStation.Data;
 using TIDStation.General;
+using TIDStation.Radio;
 
 namespace TIDStation.UI
 {
@@ -56,15 +57,30 @@ namespace TIDStation.UI
 
         private void Mouse_Moved(object sender, MouseEventArgs e)
         {
-            if(GetMouseOverGrid() is Grid grid)
+            if (GetMouseOverGrid() is Grid grid)
             {
-                Context.Instance.AnalyserFLabel.Value = grid.Tag?.ToString() ?? string.Empty;
+                if (grid.Tag is string freq)
+                {
+                    Context.Instance.AnalyserFLabel.Value = freq;
+                }
+                else
+                if (grid.Tag is Channel chan)
+                {
+                    Context.Instance.AnalyserFLabel.Value = $"{chan.Number:D3} {chan.Name}";
+                    Context.Instance.AnalyserHLabel.Value = chan.RX;
+                }
+                else
+                {
+                    Context.Instance.AnalyserFLabel.Value = string.Empty;
+                    if (chMode)
+                        Context.Instance.AnalyserHLabel.Value = string.Empty;
+                }
             }
         }
 
-        private void SetColumns(int cc)
+        private void SetColumns(int cc, bool force = false)
         {
-            if (barCount != cc)
+            if (barCount != cc || force)
             {
                 barCount = cc;
                 Children.Clear();
@@ -87,8 +103,54 @@ namespace TIDStation.UI
             }
         }
 
+        private bool chMode = false;
+
+        public void SetJetScanValues(List<(Channel c, int i)> scanResult)
+        {
+            chMode = true;
+            Context.Instance.AnalyserHLabel.Value = string.Empty;
+            int bars = scanResult.Count.Clamp(10, 200);
+            if (Context.Instance.AnalyserSteps.Value != bars)
+                Context.Instance.AnalyserSteps.Value = bars;
+            else
+                SetColumns(bars, true);
+            int hi = -10000, lo = 10000;
+            for (int i = 0; i < scanResult.Count; i++)
+            {
+                if (Children[i] is Grid bar)
+                {
+                    bar.Tag = scanResult[i].c;
+                }
+                int v = 128 - scanResult[i].i;
+                if (v > hi) hi = v;
+                if (v < lo) lo = v;
+            }
+            if (hi == lo) lo = 0;
+            int dif = hi - lo;
+            for (int i = 0; i < scanResult.Count; i++)
+            {
+                int a, b;
+                a = (128 - scanResult[i].i) - lo;
+                if (a == 0) a++;
+                b = dif - a;
+                if (Children[i] is Grid bar)
+                {
+                    try
+                    {
+                        bar.RowDefinitions[0].Height = new(b, GridUnitType.Star);
+                        bar.RowDefinitions[1].Height = new(a, GridUnitType.Star);
+                    }
+                    catch (Exception e) 
+                    {
+                        Debug.WriteLine(e.StackTrace);
+                    }
+                }
+            }
+        }
+
         public void SetValues(int count, int[] values)
         {
+            chMode = false;
             int hi = -10000, lo = 10000;
             for (int i = 0; i < count && i < barCount; i++)
             {

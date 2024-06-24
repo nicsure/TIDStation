@@ -9,10 +9,6 @@ namespace TIDStation.General
 {
     public static class Util
     {
-        public static bool SyncWait(this object obj, int timeOut = 1000)
-        {
-            lock (obj) return Monitor.Wait(obj, timeOut);
-        }
 
         public static void SyncSignal(this object obj)
         {
@@ -23,13 +19,6 @@ namespace TIDStation.General
         {
             return Monitor.Wait(obj, timeOut);
         }
-
-        public static void Signal(this object obj)
-        {
-            Monitor.PulseAll(obj);
-        }
-
-
 
         public static int Clamp(this int val, int min, int max)
         {
@@ -42,15 +31,11 @@ namespace TIDStation.General
         }
 
 
-        public static void Write16BE(this int shrt, byte[] array, int offset)
+        public static void Write16BE(this int ushrt, byte[] array, int offset)
         {
-            array[offset] = (byte)((shrt >> 8) & 0xff);
-            array[offset + 1] = (byte)(shrt & 0xff);
-        }
-
-        public static void Write8(this int shrt, byte[] array, int offset)
-        {
-            array[offset] = (byte)(shrt & 0xff);
+            // don't handle IOoB, leave default exception to occur
+            array[offset] = (byte)((ushrt >> 8) & 0xff); // move high byte into offset
+            array[offset + 1] = (byte)(ushrt & 0xff); // move low byte after offset
         }
 
         public static int Sign(this int d) => d > 0 ? 1 : d < 0 ? -1 : 0;

@@ -22,18 +22,40 @@ namespace TIDStation.UI
 
         private void EndInput()
         {
-            int i = (int.TryParse(Text, out int d) ? d : Value);
+            int i = (int.TryParse(Text, out int d) ? d : Value).Clamp(Min, Max);
             Text = $"{i:D3}";
             inputMode = false;
+            timing = false;
             Value = i;
-            if (Value != i)
-                Text = $"{Value:D3}";
+        }
+
+        private long lastKey = -1;
+        private bool timing = false;
+        private async Task Timer()
+        {
+            lastKey = DateTime.Now.Ticks;
+            if (timing) return;
+            timing = true;
+            do
+            {
+                await Task.Delay(20);
+                if (timing)
+                {
+                    long span = (DateTime.Now.Ticks - lastKey) / 10000L;
+                    if(span > InputTimeout)
+                    {
+                        KeyIn(Key.Escape);
+                    }
+                }
+            }
+            while (timing);
         }
 
         public void KeyIn(Key k)
         {
             if (inputMode)
             {
+                Tasks.Watch = Timer();
                 switch (k)
                 {
                     case Key.Escape:
@@ -81,7 +103,7 @@ namespace TIDStation.UI
                 {
                     inputMode = true;
                     Text = string.Empty;
-                    KeyIn(k);
+                    KeyIn(k);                    
                 }
             }
         }
@@ -92,7 +114,7 @@ namespace TIDStation.UI
             set { SetValue(InputTimeoutProperty, value); }
         }
         public static readonly DependencyProperty InputTimeoutProperty =
-            DependencyProperty.Register("InputTimeout", typeof(int), typeof(NumEntry), new PropertyMetadata(3000));
+            DependencyProperty.Register("InputTimeout", typeof(int), typeof(NumEntry), new PropertyMetadata(5000));
 
         public int Value
         {
@@ -102,6 +124,21 @@ namespace TIDStation.UI
         public static readonly DependencyProperty ValueProperty =
             DependencyProperty.Register("Value", typeof(int), typeof(NumEntry), new PropertyMetadata(0));
 
+        public int Min
+        {
+            get { return (int)GetValue(MinProperty); }
+            set { SetValue(MinProperty, value); }
+        }
+        public static readonly DependencyProperty MinProperty =
+            DependencyProperty.Register("Min", typeof(int), typeof(NumEntry), new PropertyMetadata(0));
+
+        public int Max
+        {
+            get { return (int)GetValue(MaxProperty); }
+            set { SetValue(MaxProperty, value); }
+        }
+        public static readonly DependencyProperty MaxProperty =
+            DependencyProperty.Register("Max", typeof(int), typeof(NumEntry), new PropertyMetadata(100));
 
     }
 }

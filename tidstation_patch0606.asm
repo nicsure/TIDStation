@@ -2,63 +2,64 @@
 .ORG        0
 RESET:
 
-.ORG        0x80B1                  ; mic gain fix
-    MOV     B, #0x03
-    MUL     AB
-    ADDC    A, #0x04
-    ORL     A, #0x40
-    MOV     R3, A
-    MOV     R5, #0xE9
-    MOV     R7, #0x7D
-    NOP
-    NOP
-    NOP
+.ORG        0x6901                  ; mic gain fix
+    .BYTE   0x44, 0x47, 0x4A, 0x4D, 0x50, 0x53, 0x56, 0x59, 0x5C, 0x5F
+.ORG        0x7F71
+    .BYTE   0xE9
+.ORG        0x7F73
+    .BYTE   0x7D
 
+.ORG        0x6af1
+NOP
+NOP
+NOP
+NOP
+NOP
 
-.ORG        0x7c39
+.ORG        0x7c43
 test2:
-.ORG        0x7c31
+.ORG        0x7c3b
     SJMP    test2                   ; prevents PTT pulsing, needs proper integration
-.ORG        0x7c28
+.ORG        0x7c32
     SJMP    test2
 
-.ORG        0x7ce1                  ; brings radio out of sleep/low power mode
+.ORG        0x7ceb                  ; brings radio out of sleep/low power mode
 wakeUp:
 
 .ORG        0x5DE7                  ; hook signal level poll function (3 bytes)
     LJMP    rssiDetour              ; Original code: 90 02 f5   MOV     DPTR,#0x2f5
 resumeRssiDetour:
 
-.ORG        0x6DC0                  ; function that scans the keypad
+.ORG        0x6DCA                  ; function that scans the keypad
     LJMP    keyPadMonitor
 keyPadResume:
 
-.ORG        0xA759                  ; first packet 57 processor
+.ORG        0xA768                  ; first packet 57 processor
     LCALL   process57               ; original code : LCALL 0xE909
-.ORG        0xB376                  ; second packet 57 processor
+.ORG        0xB385                  ; second packet 57 processor
     LCALL   process57               ; original code : LCALL 0xE909
 
-.ORG        0xC05F                  ; first packet 50 processor
+.ORG        0xC06E                  ; first packet 50 processor
     LCALL   process50               ; Original code: 90 04 7D   MOV     DPTR,#0x47D
-.ORG        0xC469                  ; second packet 50 processor 
+.ORG        0xC478                  ; second packet 50 processor 
     LCALL   process50               ; Original code: 90 04 7D   MOV     DPTR,#0x47D
 
-.ORG        0xC800                  ; BK4819 Read Register function
+.ORG        0xC80F                  ; BK4819 Read Register function
 getReg:
 
-.ORG        0xE638                  ; BK4819 Set Register function & Hook (4 bytes)
+.ORG        0xE647                  ; BK4819 Set Register function & Hook (4 bytes)
 setReg:                             ; Original code: 8f 4d      MOV     0x4d,r7
     LCALL   setRegDetour            ;                8d 4e      MOV     0x4e,r5
     NOP
 setRegResume:
 
-.ORG        0xE90E                  ; checksum calculator, returns CS in R7
+.ORG        0xE91D                  ; checksum calculator, returns CS in R7
 calcChecksum:
 
-.ORG        0xEAA9                  ; Serial send byte function, byte to send in R7
+.ORG        0xEAB8                  ; Serial send byte function, byte to send in R7
 sendSerialByte:
 
-.ORG        0xEFD0                  ; end of original firmware, start of patch code
+.ORG        0xEFE0                  ; end of original firmware, start of patch code
 
 keyPadMonitor:
     ANL     P0, #0xF0               ; execute replaced code from hooking
@@ -125,17 +126,12 @@ custom50:
 allExtMem:
     MOV     R7, #0x9A
     LCALL   sendSerialByte
-    CLR     DPH
-    CLR     DPL
+    MOV     DPTR, #0x00
 raLoop:
     MOVX    A, @DPTR
-    INC     DPTR
-    PUSH    DPL
-    PUSH    DPH
     MOV     R7, A
     LCALL   sendSerialByte
-    POP     DPH
-    POP     DPL
+    INC     DPTR
     MOV     A, DPH
     CJNE    A, #0x05, raLoop    
     RET
