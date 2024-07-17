@@ -529,6 +529,7 @@ namespace TIDStation.Serial
                         okay = true;
                         Thread.Sleep(250);
                     }
+                    /*
                     if(!okay && LiveMode)
                     {
                         Debug.WriteLine("Desync");
@@ -544,6 +545,7 @@ namespace TIDStation.Serial
                             Debug.WriteLine(sok ? "Resynced" : "Unable to Resync");
                         }
                     }
+                    */
                     //ignoreUnprompted = false;
                 }
             });
@@ -580,14 +582,24 @@ namespace TIDStation.Serial
             }
         }
 
+        private static readonly int[] mbytes = new int[3];
+        private static int byte3 = 0;
         private static int extMemCnt = 0;
-        private static int lastdebug = 0;
+        private static bool lastdebug = false;
         private static void Received(byte[] data)
         {
             foreach (byte b in data)
             {
                 switch (state)
                 {
+                    case 91: // 3 byte debug
+                        mbytes[byte3] = b;
+                        if (++byte3 >= 3)
+                        {
+                            Debug.WriteLine($"Reg:{mbytes[0]:X2} B1:{mbytes[1]:X2} B2:{mbytes[2]:X2} ");
+                            state = 0;
+                        }
+                        break;
                     case 100: // ext mem data
                         extMem[extMemCnt++] = b;
                         if (extMemCnt >= 0x500)
@@ -598,10 +610,11 @@ namespace TIDStation.Serial
                         }
                         break;
                     case 99: // radio debug
-                        if (b != lastdebug)
+                        //if (b != lastdebug)
                         {
-                            Debug.WriteLine($"Radio Debug Byte: {b:X2}");
-                            lastdebug = b;
+                            Debug.WriteLine($"Radio Debug Byte: {(lastdebug ? "R7":"R6")} {b:X2}");
+                            lastdebug = !lastdebug;
+                            if (!lastdebug) Debug.WriteLine(string.Empty);
                         }
                         state = 0;
                         break;
@@ -636,7 +649,7 @@ namespace TIDStation.Serial
                         state = 10;
                         break;
                     case 10: // rssi noise level
-                        Debug.WriteLine($"RSSI:{rssi}  Noise:{b}");
+                        //Debug.WriteLine($"RSSI:{rssi}  Noise:{b}");
                         Context.Instance.Rssi.Value = (rssi - b).Clamp(30, 270);
                         lastRssi = DateTime.Now.Ticks;
                         Context.Instance.State.Value = 1;
@@ -667,6 +680,10 @@ namespace TIDStation.Serial
                             case 0x07: // okay, ack? custom
                                 //Debug.WriteLine("Custom Ack");
                                 sync.SyncSignal();
+                                break;
+                            case 0x91: // radio debug 3 byte
+                                state = 91;
+                                byte3 = 0;
                                 break;
                             case 0x99: // radio debug
                                 state = 99;

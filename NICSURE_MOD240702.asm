@@ -1,177 +1,204 @@
 
+.ORG        0x6B12                  ; mic gain fix
+    .BYTE   0x4, 0x7, 0xA, 0xD, 0x10, 0x13, 0x16, 0x19, 0x1C, 0x1F
 
-.ORG        0x6901                  ; mic gain fix
-    .BYTE   0x44, 0x47, 0x4A, 0x4D, 0x50, 0x53, 0x56, 0x59, 0x5C, 0x5F
-.ORG        0x7F71
-    .BYTE   0xE9
-.ORG        0x7F73
-    .BYTE   0x7D
-
-.ORG        0xC80F                  ; BK4819 Read Register function
+.ORG        0xC875                  ; BK4819 Read Register function
 getReg:
 
-.ORG        0xd443                  ; fill screen area
+.ORG        0xd4a9                  ; fill screen area
 fillArea:
 
-.ORG        0xAE67                  ; print regular size text?  r1=low byte code mem, r2=high byte code mem
+.ORG        0xAEcd                  ; print regular size text?  r1=low byte code mem, r2=high byte code mem
 printRegularText:
 
-.ORG        0xCCAE                  ; print small size tex? r1=low byte code mem, r2=high byte code mem
+.ORG        0xCd14                  ; print small size tex? r1=low byte code mem, r2=high byte code mem
     ;LCALL   printSmallText
     ;NOP
-printSmall:
+printSmall:                         ; r1=low pointer, r2=high pointer, r3=0xff, 0x43=y coord, 0x44/0x45=color, r5=x coord
 
-.ORG        0xE647                  ; BK4819 Set Register function & Hook (4 bytes)
+.ORG        0xE6a3                  ; BK4819 Set Register function & Hook (4 bytes)
 setReg:                             ; Original code: 8f 4d      MOV     0x4d,r7
     LCALL   setRegDetour            ;                8d 4e      MOV     0x4e,r5
     NOP
 setRegResume:
 
-.ORG        0x75a4                  ; remove original AM indicator
+.ORG        0x7602                  ; remove original AM indicator
     NOP
     NOP
     NOP
 
-.ORG        0x82c5                  ; remove "POWER" text
+.ORG        0x8324                  ; remove "POWER" text
     LCALL   plus40
 
-.ORG        0x82d5                  ; remove rssi "bracket"
+.ORG        0x8334                  ; remove rssi "bracket"
     LJMP    rssiBracket
+resumeRssiBracket:
 
-.ORG        0x82ae                  ; 9 on the meter
+.ORG        0x830d                  ; 9 on the meter
     LCALL   green9
 
-.ORG        0x8264                  ; vertical location of s-meter numbers sync mode
+.ORG        0x82c3                  ; vertical location of s-meter numbers sync mode
     .BYTE   0x05
-.ORG        0x826e                  ; vertical location of s-meter numbers non sync mode
+.ORG        0x82cd                  ; vertical location of s-meter numbers non sync mode
     .BYTE   0x05
 
-.ORG        0x5DDA                  ; hook signal level poll function (3 bytes)
+.ORG        0x5e0d                  ; hook signal level poll function (3 bytes)
     LJMP    rssiDetour              ; Original code: 90 02 f5   MOV     DPTR,#0x2f5
-.ORG        0x5dea
+.ORG        0x5e1d
 resumeRssiDetour:
-.ORG        0x5e40
+.ORG        0x5e73
 rssiNoSignal:
 
-.ORG        0xEAB8                  ; Serial send byte function, byte to send in R7
+.ORG        0xEb14                  ; Serial send byte function, byte to send in R7
 sendSerialByte:
 
 .ORG        0x0122
     .BYTE   0x31, 0, 0x33, 0, 0x35, 0, 0x37, 0, 0x39, 0, 0x34, 0x30, 0x2b, 0
-.ORG        0x8276
+.ORG        0x82d5
     mov     r5, #0x04
-.ORG        0x8282
+.ORG        0x82e1
     mov     r5, #0x16
-.ORG        0x8290
+.ORG        0x82ef
     mov     r5, #0x28
-.ORG        0x829e
+.ORG        0x82fd
     mov     r5, #0x3a
-.ORG        0x82ac
+.ORG        0x830b
     mov     r5, #0x4c
-.ORG        0x82c3
+.ORG        0x8322
     mov     r5, #0x5f
 
-.ORG        0x2d12
-    .byte   0x0a
 .ORG        0x2d14
-    .byte   0xd1
-
-.ORG        0x4abe
     .byte   0x0a
-.ORG        0x4ac0
+.ORG        0x2d16
     .byte   0xd1
 
-.ORG        0x4f3a
-    .byte   0x0a
-.ORG        0x4f3c
-    .byte   0xd1
+;.ORG        0x4abe ; currently unknown
+;    .byte   0x0a
+;.ORG        0x4ac0
+;    .byte   0xd1
+;
+;.ORG        0x4f3f ; currently unknown
+;    .byte   0x0a
+;.ORG        0x4f41
+;    .byte   0xd1
+;
+;.ORG        0x6d0b ; currently unknown
+;    .byte   0x0a
+;.ORG        0x6d0d
+;    .byte   0xd1
+;
+;.ORG        0x7940 ; currently unknown
+;    .byte   0x0a
+;.ORG        0x7942
+;    .byte   0xd1
 
-.ORG        0x6cfc
-    .byte   0x0a
-.ORG        0x6cfe
-    .byte   0xd1
 
-.ORG        0x7931
-    .byte   0x0a
-.ORG        0x7933
-    .byte   0xd1
-
-
-.org        0xd242                  ; read eeprom function address
+.org        0xd2a8                  ; read eeprom function address
 readEeprom:
     ljmp    readEepromHook
     nop
 readEepromResume:
 
-.ORG        0xd8d7                  ; write eeprom function address
+.ORG        0xd8ed                  ; write eeprom function address
 writeEeprom:
 
-.ORG        0x6dca                  ; button scanner
+.ORG        0x6e28                  ; button scanner
     LJMP   buttonScanner
 buttonScannerResume:
 
+;ID    KEY
 ; 0 = no key
 ; 1 = 0
+; 2 = 1
 ; ...
+; 9 = 8
 ; A = 9
 ; B = Menu (blue)
 ; C = up
 ; D = down
 ; E = Cancel (red)
-; F = star
+; F = *
 ;10 = #
 ;12 = flashlight
-;13 = PTT (large)
-;1A = PTT (small)
+;13 = PTT-A (large)
+;1A = PTT-B (small)
 
 
-.ORG        0xd0db                  ; menu mode key press
+.ORG        0xd141                  ; menu mode key press
     LCALL   menuKey
 
-.ORG        0x618d                  ; vfo mode key press
+.ORG        0x61ca                  ; vfo mode key press
     LCALL   vfoKey
 
 .ORG        0x2a39
-    LJMP    fineStepHook
+    LJMP    fineStepDetour
     NOP
 fineStepResume:
 
-.ORG        0x2311
-    pop     b
-    pop     b
-    pop     b
-    pop     b
-    ret
+.ORG        0x2400
+ctcssDiffs:
+    .byte   50,47,54,52,53,56,58,60,64,62,68,54,53,73,76,76,81,83,86,89,93,97,99,101,108,109,64,50,68,49,71,51,72,54,74,56,77,60,78,60,82,62,87,153,157,70,93,169,176,78
+ctcssTones:
+    .byte   "067.0",0
+    .byte   "069.3",0
+    .byte   "071.9",0
+    .byte   "074.4",0
+    .byte   "077.0",0
+    .byte   "079.7",0
+    .byte   "082.5",0
+    .byte   "085.4",0
+    .byte   "088.5",0
+    .byte   "091.5",0
 
-.ORG        0xEFE0                  ; start of mod code
+    .byte   "094.8",0
+    .byte   "097.4",0
+    .byte   "100.0",0
+    .byte   "103.5",0
+    .byte   "107.2",0
+    .byte   "110.9",0
+    .byte   "114.8",0
+    .byte   "118.8",0
+    .byte   "123.0",0
+    .byte   "127.3",0
 
+    .byte   "131.8",0
+    .byte   "136.5",0
+    .byte   "141.3",0
+    .byte   "146.2",0
+    .byte   "151.4",0
+    .byte   "156.7",0
+    .byte   "159.8",0
+    .byte   "162.2",0
+    .byte   "165.5",0
+    .byte   "167.9",0
 
-fineStepHook:
-    push    acc
-    mov     dptr, #0x702
-    movx    a, @dptr
-    jz      noFineStep
-    pop     b
-    dec     a
-    mov     b, #4
-    mul     ab
-    mov     b, a
-    mov     dptr, #fineSteps
-    mov     a, dpl
-    clr     C
-    addc    a, b
-    mov     dpl, a
-    mov     a, #0
-    addc    a, dph
-    mov     dph, a
-    ret
-noFineStep:
-    pop     acc
-    .byte   0x25, 0xe0, 0x25, 0xe0
-    LJMP    fineStepResume
+    .byte   "171.3",0
+    .byte   "173.8",0
+    .byte   "177.3",0
+    .byte   "179.9",0
+    .byte   "183.5",0
+    .byte   "186.2",0
+    .byte   "189.9",0
+    .byte   "192.8",0
+    .byte   "196.6",0
+    .byte   "199.5",0
+
+    .byte   "203.5",0
+    .byte   "206.5",0
+    .byte   "210.7",0
+    .byte   "218.1",0
+    .byte   "225.7",0
+    .byte   "229.1",0
+    .byte   "233.6",0
+    .byte   "241.8",0
+    .byte   "250.3",0
+    .byte   "254.1",0
+
+allZeros:
+    .byte   "000.0",0
 
 fineSteps:
-    .byte   0,0,0,250
+    .byte   0,0,0,1
     .byte   0,0,0,2
     .byte   0,0,0,5
     .byte   0,0,0,10
@@ -179,14 +206,240 @@ fineSteps:
     .byte   0,0,0,50
     .byte   0,0,0,100
 
+labelUSB:
+    .BYTE   "SB",0
+labelAM:
+    .BYTE   "AM",0
+labelFM:
+    .BYTE   "FM",0
+num0:
+    .byte 0x30,0
+num1:
+    .byte 0x31,0
+num2:
+    .byte 0x32,0
+num3:
+    .byte 0x33,0
+num4:
+    .byte 0x34,0
+num5:
+    .byte 0x35,0
+num6:
+    .byte 0x36,0
+num7:
+    .byte 0x37,0
+num8:
+    .byte 0x38,0
+num9:
+    .byte 0x39,0
+pct:
+    .byte "%",0
+
+.ORG        0xd099                  ; hook to capture battery level
+    LCALL   captureBattLevel
+    NOP
+
+.ORG        0xddb6                  ; routine that draws the battery icon
+    lcall   battLevel
+
+.org        0xf7ff
+    .byte   0
+
+.org        0x30b8
+    mov     r7, #0x00
+    mov     r6, #0x3f
+    mov     r5, #0xab
+    mov     r4, #0x01
+.org        0x6a22
+    mov     r7, #0x00
+    mov     r6, #0x3f
+    mov     r5, #0xab
+    mov     r4, #0x01
+.org        0x79b3
+    mov     r7, #0x00
+    mov     r6, #0x3f
+    mov     r5, #0xab
+    mov     r4, #0x01
+.org        0x79cc
+    mov     r6, #0x3f
+    mov     r5, #0xab
+    mov     r4, #0x01
+
+.ORG        0xf03b                  ; start of mod code
+
+
+battLevel:
+    mov     dptr, #0x705            ; batt setting
+    movx    a, @dptr
+    jnz     percentage
+    ljmp    0x99a5                  ; relocate
+percentage:
+    mov     dptr, #0xa06            ; high byte batt level
+    movx    a, @dptr
+    mov     b, a
+    mov     dptr, #0xa07            ; low byte batt level
+    movx    a, @dptr
+    mov     r0, A
+    mov     a, b
+    subb    a, #0x0c
+    rr      a
+    rr      a
+    mov     b, a
+    mov     a, r0
+    rr      a
+    rr      a
+    anl     a, #0x3f
+    orl     a, b
+setBattColor:
+    mov     b, a
+    clr     c
+    subb    a, #50
+    jc      redBatt
+    subb    a, #167
+    jc      whiteBatt
+    mov     0x54, #0xf5
+    mov     0x55, #0x5f
+    sjmp    battColSet
+redBatt:
+    mov     0x54, #0xff
+    mov     0x55, #0x55
+    sjmp    battColSet
+whiteBatt:
+    mov     0x54, #0xff
+    mov     0x55, #0xff
+battColSet:
+    mov     a, b
+    mov     b, #10                  ; scale by 10
+    mul     ab
+    mov     r3, b                   ; percentage 10's digit into r3
+    mov     b, #10                  ; a now has the low byte of the scaled value, scale this again by 10
+    mul     ab                      ; this gives us a 100 scale for 1's digit
+    push    b                       ; save the 1's digit to the stack
+    
+    mov     dptr, #0x900
+    mov     a, #0x1a
+    movx    @dptr, a
+    
+    mov     a, r3
+    mov     r5, #102
+    acall   printDigit
+    pop     acc
+    mov     r5, #110
+    acall   printDigit
+    mov     a, #10
+    mov     r5, #118
+    acall   printDigit
+    ret
+
+printDigit:                         ; a=digit, xm0x900=y, r5=x
+    mov     dptr, #num0
+    mov     r1, dpl
+    mov     r2, dph
+    rl      a
+    clr     c
+    addc    a, r1
+    mov     r1, a
+    clr     a
+    addc    a, r2
+    mov     r2, a
+    MOV     R3, #0xFF
+    mov     dptr, #0x900
+    movx    a, @dptr
+    mov     0x53, a
+    LCALL   printRegularText
+    ret
+
+captureBattLevel:
+    .byte   0xe5, 0x0e              ; mov a, bank1_r6
+    MOV     DPTR, #0xA06
+    MOVX    @DPTR, A
+    .byte   0xe5, 0x0f              ; mov a, bank1_r7
+    MOV     DPTR, #0xA07
+    MOVX    @DPTR, A
+    SUBB    A, #0x22
+    ret
+
+fineStepDetour:
+    push    acc
+    mov     dptr, #0x702
+    MOVX    a, @dptr
+    jz      noFineTuneActive
+    pop     b
+    push    acc
+    mov     dptr, #0x465
+    mov     a, #2
+    movx    @dptr, a
+    mov     dptr, #0x4a3
+    mov     a, #0x07
+    movx    @dptr, a
+    mov     dptr, #0x14b
+    movx    a, @dptr
+    anl     a, #0x0f
+    orl     a, #0x70
+    movx    @dptr, a
+    pop     acc
+    dec     a
+    mov     dptr, #fineSteps
+    mov     b, #4
+    mul     ab
+    clr     C
+    addc    a, dpl
+    mov     dpl, a
+    mov     a, dph
+    addc    a, #0x00
+    mov     dph, a
+    ret
+noFineTuneActive:
+    pop     acc
+    .byte   0x25, 0xe0, 0x25, 0xe0
+    LJMP    fineStepResume
+
+getRegSafe:
+    mov     dptr, #0x2f5
+    movx    a, @dptr
+    push    acc
+    inc     dptr
+    movx    a, @dptr
+    push    acc
+    mov     dptr, #0x2c3
+    movx    a, @dptr
+    push    acc
+    mov     dptr, #0x2e5
+    movx    a, @dptr
+    push    acc
+    LCALL   getReg
+    mov     dptr, #0x2f5
+    movx    a, @dptr
+    mov     r5, a
+    inc     dptr
+    movx    a, @dptr
+    mov     r3, a
+    mov     dptr, #0x2e5
+    pop     acc
+    movx    @dptr, a
+    mov     dptr, #0x2c3
+    pop     acc
+    movx    @dptr, a
+    mov     dptr, #0x2f6
+    pop     acc
+    movx    @dptr, a
+    mov     dptr, #0x2f5
+    pop     acc
+    movx    @dptr, a
+    ret
+
 rssiBracket:
+    mov     dptr, #0x750
+    mov     a, #1
+    movx    @dptr, a
     mov     0x50, #0xff
     mov     0x51, #0xff
     mov     r3, #1
     mov     r5, #15
     mov     r7, #0
     lcall   fillArea
-    ret
+    .byte   0xc2, 0x69, 0xe4
+    ljmp    resumeRssiBracket
 
 green9:
     mov     0x44, #0xf0
@@ -202,7 +455,153 @@ plus40:
     LCALL   printSmall
     ret
 
+toneMonitor:
+    mov     r7, #0x68
+    lcall   getRegSafe
+    mov     a, r5
+    anl     a, #0x80
+    jnz     noCtcssDetected
+    mov     r7, #2
+    sjmp    toneDetected
+noCtcssDetected:
+    mov     r7, #0x69
+    lcall   getRegSafe
+    mov     a, r5
+    anl     a, #0x80
+    jnz     noDcsDetected
+    mov     r7, #1
+    sjmp    toneDetected
+noDcsDetected:
+    mov     dptr, #0x600
+    movx    a, @dptr
+    jz      noPreviousToneDisplayed
+    mov     dptr, #0x600
+    clr     a
+    movx    @dptr, a
+
+    mov     dptr, #allZeros
+    MOV     R2, DPH
+    MOV     R1, DPL
+    MOV     R3, #0xFF
+    MOV     R5, #96
+    MOV     0x43, #102
+    mov     0x44, #0xef
+    mov     0x45, #0xef
+    LCALL   printSmall
+noPreviousToneDisplayed:
+    ret
+
+toneDetected:
+    mov     dptr, #0x600
+    mov     a, r7
+    movx    @dptr, a
+    mov     a, r5
+    cjne    r7, #1, isCtcss
+isDcs:
+    anl     a, #0xf
+    mov     dptr, #0x601
+    movx    @dptr, a
+    inc     dptr
+    mov     a, r3
+    movx    @dptr, a
+    mov     r7, #0x6a    
+    lcall   getRegSafe
+    mov     dptr, #0x603
+    mov     a, r5
+    anl     a, #0xf
+    movx    @dptr, a
+    inc     dptr
+    mov     a, r3
+    movx    @dptr, a
+    sjmp    toneReady1
+isCtcss:
+    anl     a, #0x1f
+    mov     dptr, #0x601
+    movx    @dptr, a
+    inc     dptr
+    mov     a, r3
+    movx    @dptr, a
+toneReady1:
+    mov     dptr, #0x600
+    movx    a, @dptr
+    cjne    a, #2, toneisDcs     
+    sjmp    ctcssTone
+toneisDcs:
+    ajmp    dcsTone
+
+
+sub16:
+    MOV     A, R3
+    CLR     C
+    SUBB    A, R0
+    MOV     R3, A
+    MOV     A, R5
+    SUBB    A, R1    
+    MOV     R5, A
+    RET
+
+ctcssTone:
+    mov     dptr, #0x602
+    MOVX    a, @dptr
+    mov     r3, a
+    mov     dptr, #0x601
+    MOVX    a, @dptr
+    mov     r5, a
+    mov     r1, #0x05
+    mov     r0, #0x4e
+    acall   sub16
+    mov     r1, #0
+    clr     b
+ctcssLoop:
+    mov     dptr, #ctcssDiffs
+    mov     a, dpl
+    clr     c
+    addc    a, b
+    mov     dpl, a
+    mov     a, #0
+    addc    a, dph
+    mov     dph, a
+    clr     a
+    movc    a, @a+dptr
+    mov     r0, a
+    acall   sub16
+    jc      foundCtcss
+    inc     b
+    mov     a, b
+    cjne    a, #50, ctcssLoop
+noValidTone:
+    ret
+foundCtcss:
+    mov     a, b                    ; b is the index
+    mov     b, #6
+    mul     ab
+    mov     dptr, #ctcssTones
+    clr     c
+    addc    a, dpl
+    mov     dpl, a
+    mov     a, b
+    addc    a, dph
+    mov     dph, a
+    ; r1=low pointer, r2=high pointer, r3=0xff, 0x43=y coord, 0x44/0x45=color, r5=x coord
+    MOV     R2, DPH
+    MOV     R1, DPL
+    MOV     R3, #0xFF
+    MOV     R5, #96
+    MOV     0x43, #102
+    mov     0x44, #0xef
+    mov     0x45, #0xef
+    LCALL   printSmall
+
+dcsTone:
+    ret
+
+
 noSignalDetected:
+    mov     dptr, #0x750
+    movx    a, @dptr
+    jz      skipRssi
+    clr     a
+    movx    @dptr, a
     mov     0x50, #0
     mov     0x51, #0
     mov     r3, #8
@@ -226,28 +625,25 @@ noKillDisable:
     JNB     ACC.3, skipRssi
     CLR     ACC.3
     MOV     0x27, A
-
-    MOV     DPTR, #0x2F5
-    MOVX    A, @DPTR
-    PUSH    ACC
-    inc     dptr
-    MOVX    A, @DPTR
-    PUSH    ACC
-
+    mov     dptr, #0x703            ; hooks setting
+    movx    a, @dptr
+    jz      hooksOkay
+    MOV     DPTR, #0x2F5            ; move the high byte address into DPTR to put state back to how it should be
+    LJMP    resumeRssiDetour        ; jump back to original function    
+hooksOkay:
+    mov     dptr, #0x704            ; tone monitor setting
+    movx    a, @dptr
+    jz      noToneMonitorSet
+    mov     dptr, #0x4ff            ; ext menu active?
+    movx    a, @dptr
+    jnz     noToneMonitorSet
+    lcall   toneMonitor
+noToneMonitorSet:
     MOV     R7, #0x65
-    LCALL   getReg
-    MOV     DPTR, #0x2F6
-    MOVX    A, @DPTR
+    LCALL   getRegSafe
+    MOV     A, R3
     ANL     A, #0x7F
     MOV     B, A
-
-    MOV     DPTR, #0x2F6
-    POP     ACC
-    MOVX    @DPTR, A
-    MOV     DPTR, #0x2F5
-    POP     ACC
-    MOVX    @DPTR, A
-
     MOV     A, #0x65
     CLR     C
     SUBB    A, B
@@ -255,53 +651,19 @@ noKillDisable:
     CLR     A
 noCarry1:
     PUSH    ACC
-
-    MOV     DPTR, #0x2F5
-    MOVX    A, @DPTR
-    PUSH    ACC
-    inc     dptr
-    MOVX    A, @DPTR
-    PUSH    ACC
-
     MOV     R7, #0x67
-    LCALL   getReg
-
-    MOV     DPTR, #0x2F5            ; get address of the rssi high byte
-    MOVX    A, @DPTR                ; move high byte into A
+    LCALL   getRegSafe
+    MOV     A, R5                   ; move high byte into A
     ANL     A, #0x01                ; we only need bit 0
     mov     r1, a
-    MOV     DPTR, #0x2F6            ; get the address in extmem of the rssi low byte
-    MOVX    A, @DPTR                ; put the low byte into A   
-    mov     r2, a
-
-    MOV     DPTR, #0x2F6
-    POP     ACC
-    MOVX    @DPTR, A
-    MOV     DPTR, #0x2F5
-    POP     ACC
-    MOVX    @DPTR, A
-
     POP     ACC
     MOV     R0, A
     mov     b, r1
-    mov     a, r2
+    mov     a, r3
     CLR     C
     ADDC    A, R0
     JNC     noCarry2
     INC     B
-
-    ;POP     ACC
-    ;MOV     R0, A
-    ;MOV     DPTR, #0x2F5            ; get address of the rssi high byte
-    ;MOVX    A, @DPTR                ; move high byte into A
-    ;ANL     A, #0x01                ; we only need bit 0
-    ;mov     b, a
-    ;MOV     DPTR, #0x2F6            ; get the address in extmem of the rssi low byte
-    ;MOVX    A, @DPTR                ; put the low byte into A    
-    ;CLR     C
-    ;ADDC    A, R0
-    ;JNC     noCarry2
-    ;INC     B
 noCarry2:
     JNB     B.1, notTooHigh
     mov     a, #0xff
@@ -316,6 +678,8 @@ not9Bit:
     jnc     notneg
     clr     a
 notneg:
+    mov     dptr, #0x750
+    movx    @dptr, a
     mov     0x51, a
     mov     r3, #6
     mov     r5, #17
@@ -326,25 +690,14 @@ exitBarDraw:
     MOV     DPTR, #0x2F5            ; move the high byte address into DPTR to put state back to how it should be
     LJMP    resumeRssiDetour        ; jump back to original function
 
-
-;printRegularText:
-;    mov     0x52,R5
-;    mov     0x4f,R3
-;    ret
-
-;printSmallText:
-;    mov     0x40,R2
-;    mov     0x3f,R3
-;    ret
-
-;fillArea:
-;    mov     0x4d, r7
-;    mov     0x4e, r5
-;    ret
-
+exitSetRegTop:
+    LJMP    exitSetReg
 
 setRegDetour:
     MOV     0x4D, R7                ; perform one of the instructions replaced by the hook
+    mov     dptr, #0x703            ; hooks setting
+    movx    a, @dptr
+    jnz     exitSetRegTop           ; exit if hooks are blocked
     CJNE    R7, #0x47, not47        ; check to see if we're setting reg 47 (modulation)
     SJMP    reg47
 not47:
@@ -354,6 +707,27 @@ not3D:
     CJNE    R7, #0x73, not73        ; check to see if we're setting reg 73
     SJMP    reg73
 not73:
+    ;mov     dptr, #0x900
+    ;mov     a, r7
+    ;movx    @dptr, a
+    ;inc     dptr
+    ;mov     a, r5
+    ;movx    @dptr, a
+    ;inc     dptr
+    ;mov     a, r3
+    ;movx    @dptr, a
+    ;mov     r7, #0x99
+    ;lcall   sendSerialByte
+    ;mov     dptr, #0x900
+    ;movx    a, @dptr
+    ;mov     r7, a
+    ;lcall   sendSerialByte
+    ;mov     dptr, #0x901
+    ;movx    a, @dptr
+    ;mov     r5, a
+    ;mov     dptr, #0x902
+    ;movx    a, @dptr
+    ;mov     r3, a
     SJMP    exitSetReg
 
 reg73:
@@ -394,34 +768,14 @@ reg47:
     MOV     0x4D, R7
     MOV     0x4E, R5
     LCALL   setRegResume
-
-    MOV     DPTR, #0x2F5
-    MOVX    A, @DPTR
-    PUSH    ACC
-    inc     dptr
-    MOVX    A, @DPTR
-    PUSH    ACC
-
     MOV     R7, #0x73
-    LCALL   getReg
-    MOV     DPTR, #0x2F5
-    MOVX    A, @DPTR
-    MOV     R5, A
-    INC     DPTR
-    MOVX    A, @DPTR
+    LCALL   getRegSafe              ; sets r3 and r5
+    MOV     A, R3
     ANL     A, #0xEF
     MOV     R3, A
     MOV     R7, #0x73
     MOV     0x4D, R7
     MOV     0x4E, R5
-
-    MOV     DPTR, #0x2F6
-    POP     ACC
-    MOVX    @DPTR, A
-    MOV     DPTR, #0x2F5
-    POP     ACC
-    MOVX    @DPTR, A
-
     LCALL   setRegResume
     LCALL   setModLabel
     POP     ACC
@@ -462,35 +816,15 @@ set3DRegister:
     MOV     0x4E, R5
     LCALL   setRegResume
 read73Register:
-
-    MOV     DPTR, #0x2F5
-    MOVX    A, @DPTR
-    PUSH    ACC
-    inc     dptr
-    MOVX    A, @DPTR
-    PUSH    ACC
-
     MOV     R7, #0x73
-    LCALL   getReg
-    MOV     DPTR, #0x2F5
-    MOVX    A, @DPTR
-    MOV     R5, A
-    INC     DPTR
-    MOVX    A, @DPTR
+    LCALL   getRegSafe
+    MOV     A, r3
     ORL     A, #0x10
 set73Register:
     MOV     R3, A
     MOV     R7, #0x73
     MOV     0x4D, R7
     MOV     0x4E, R5 
-
-    MOV     DPTR, #0x2F6
-    POP     ACC
-    MOVX    @DPTR, A
-    MOV     DPTR, #0x2F5
-    POP     ACC
-    MOVX    @DPTR, A
-
     LCALL   setRegResume
     LCALL   setModLabel
     POP     ACC
@@ -501,28 +835,9 @@ setModLabel:
     mov     dptr, #0x4ff
     movx    a, @dptr
     jnz     setModLabelExit
-
-    MOV     DPTR, #0x2F5
-    MOVX    A, @DPTR
-    PUSH    ACC
-    inc     dptr
-    MOVX    A, @DPTR
-    PUSH    ACC
-
     MOV     R7, #0x47
-    LCALL   getReg    
-    MOV     DPTR, #0x2F5
-    MOVX    A, @DPTR
-    mov     b, a
-
-    MOV     DPTR, #0x2F6
-    POP     ACC
-    MOVX    @DPTR, A
-    MOV     DPTR, #0x2F5
-    POP     ACC
-    MOVX    @DPTR, A
-
-    mov     a, b
+    LCALL   getRegSafe
+    mov     a, r5
     JB      ACC.2, amOrUSB
     JB      ACC.0, inFM
     RET
@@ -540,20 +855,12 @@ printLabel:
     MOV     R2, DPH
     MOV     R1, DPL
     MOV     R3, #0xFF
-    LCALL   0x4782
+    LCALL   0x4a96                      ; relocate
     MOV     R5, #0x52
     MOV     0x53, #0x1A
     LCALL   printRegularText
 setModLabelExit:
     RET
-
-labelUSB:
-    .BYTE   "USB",0
-labelAM:
-    .BYTE   "AM ",0
-labelFM:
-    .BYTE   "FM ",0
-
 
 ; 0 = no key
 ; 1 = 0
@@ -584,6 +891,9 @@ readEepromHook:
     mov     R3, #0x10 ; read 16 byte
     mov     R7, #0x1a ; high byte eeprom address
     mov     R5, #0x00 ; low byte eeprom address
+    mov     dptr, #0x750
+    mov     a, #1
+    movx    @dptr, a
 notFirstRun:
     .byte   0x8b, 0x4c, 0xaa, 0x05
     LJMP    readEepromResume
@@ -609,7 +919,7 @@ vfoKey:
     mov     dptr, #0x4ff
     clr     a
     movx    @dptr, a
-    mov     dptr, #0x478
+    mov     dptr, #0x479
     ret
 
 menuKey:
@@ -618,10 +928,10 @@ menuKey:
     jz      normalMenu
     dec     a
     jz      exMenu
-    mov     dptr, #0x478
+    mov     dptr, #0x479
     ret    
 normalMenu:
-    mov     dptr, #0x478
+    mov     dptr, #0x479
     movx    a, @dptr
     cjne    a, #0x13, resumeMenu
     mov     dptr, #0x4ff
@@ -633,13 +943,13 @@ normalMenu:
 resumeMenu:
     ret
 exMenu:
-    mov     dptr, #0x478
+    mov     dptr, #0x479
     movx    a, @dptr
     cjne    a, #0x0e, tryUp
     mov     dptr, #0x4ff
     clr     a
     movx    @dptr, a
-    mov     dptr, #0x478
+    mov     dptr, #0x479
     ret
 tryUp:
     cjne    a, #0xc, tryDown
@@ -656,7 +966,7 @@ tryBlue:
     mov     dptr, #0xe10
     movx    a, @dptr
     inc     a
-    cjne    a, #0x03, notTooMuch
+    cjne    a, #0x06, notTooMuch  ; total menu check
     clr     a
 notTooMuch:
     mov     dptr, #0xe10
@@ -884,17 +1194,21 @@ skipMarker:
 noMoreOptions:
     ret
 
-
-
 indicator:
     .byte   ">",0
 menuTitles:
     .word   menuOptions0
-    .byte   3,"0. AM/USB Ovr ",0
+    .byte   3,"0.AM/USB Ovr  ",0
     .word   menuOptions1
-    .byte   2,"1. Kill Killer",0
+    .byte   2,"1.Kill Killer ",0
     .word   menuOptions2
-    .byte   8,"2. Fine Step",0
+    .byte   8,"2.Fine Step   ",0
+    .word   menuOptions3
+    .byte   2,"3.Mod Hooks   ",0
+    .word   menuOptions4
+    .byte   2,"4.Tone Monitor",0
+    .word   menuOptions5
+    .byte   2,"5.Batt Display",0
 menuOptions0:
     .byte   "OFF         ",0
     .byte   "AM          ",0
@@ -911,6 +1225,15 @@ menuOptions2:
     .byte   "0.25 K      ",0
     .byte   "0.50 K      ",0
     .byte   "1.00 K      ",0
+menuOptions3:
+    .byte   "Allowed     ",0
+    .byte   "Blocked     ",0
+menuOptions4:
+    .byte   "OFF         ",0
+    .byte   "Enabled     ",0
+menuOptions5:
+    .byte   "Icon        ",0
+    .byte   "Percentage  ",0
 
 
 
@@ -919,24 +1242,24 @@ rssiBar:
    MOV     0x4d,R7                   
    MOV     0x4e,R5              
    MOV     0x4f,R3              
-   MOV     R7,#0x2a
-   LCALL   0xee70                     
+   MOV     R7,#0x2a ; ABSOLUTE CALLS
+   LCALL   0xeecc  ;;                   
    MOV     A,0x4d                   
    ADD     A,#0x20
    MOV     R7,A
-   LCALL   0xef22                     
+   LCALL   0xef7e ;;                     
    MOV     A,0x4d                   
    ADD     A,#0x20
    MOV     R7,A
-   LCALL   0xef22                     
+   LCALL   0xef7e ;;                     
    MOV     R7,#0x2b
-   LCALL   0xee70                     
+   LCALL   0xeecc ;;                     
    MOV     R7,0x4e             
-   LCALL   0xef22                     
+   LCALL   0xef7e ;;                     
    MOV     R7,0x4e             
-   LCALL   0xef22                     
+   LCALL   0xef7e ;;                     
    MOV     R7,#0x2c
-   LCALL   0xee70                     
+   LCALL   0xeecc ;;                     
    CLR     A
    MOV     0x52,A       
 LAB_CODE_d475:                   
@@ -972,8 +1295,8 @@ isGreen:
 isRed:
    mov     r7, #0xff
    mov     r5, #0x08
-drawDot:
-   LCALL   0xecab                     
+drawDot:                        ; ABSOLUTE CALLS
+   LCALL   0xed07 ;;                     
    INC     0x53                     
    SJMP    LAB_CODE_d47f
 LAB_CODE_d491:                       

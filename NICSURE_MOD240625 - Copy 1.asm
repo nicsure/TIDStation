@@ -1,74 +1,68 @@
 
 
-.ORG        0x6901                  ; mic gain fix
-    .BYTE   0x44, 0x47, 0x4A, 0x4D, 0x50, 0x53, 0x56, 0x59, 0x5C, 0x5F
-.ORG        0x7F71
-    .BYTE   0xE9
-.ORG        0x7F73
-    .BYTE   0x7D
 
-.ORG        0xC80F                  ; BK4819 Read Register function
+.ORG        0xC829                  ; BK4819 Read Register function
 getReg:
 
-.ORG        0xd443                  ; fill screen area
+.ORG        0xd45d                  ; fill screen area
 fillArea:
 
-.ORG        0xAE67                  ; print regular size text?  r1=low byte code mem, r2=high byte code mem
+.ORG        0xAE81                  ; print regular size text?  r1=low byte code mem, r2=high byte code mem
 printRegularText:
 
-.ORG        0xCCAE                  ; print small size tex? r1=low byte code mem, r2=high byte code mem
+.ORG        0xCCC8                  ; print small size tex? r1=low byte code mem, r2=high byte code mem
     ;LCALL   printSmallText
     ;NOP
 printSmall:
 
-.ORG        0xE647                  ; BK4819 Set Register function & Hook (4 bytes)
+.ORG        0xE661                  ; BK4819 Set Register function & Hook (4 bytes)
 setReg:                             ; Original code: 8f 4d      MOV     0x4d,r7
     LCALL   setRegDetour            ;                8d 4e      MOV     0x4e,r5
     NOP
 setRegResume:
 
-.ORG        0x75a4                  ; remove original AM indicator
+.ORG        0x75b3                  ; remove original AM indicator
     NOP
     NOP
     NOP
 
-.ORG        0x82c5                  ; remove "POWER" text
+.ORG        0x82df                  ; remove "POWER" text
     LCALL   plus40
 
-.ORG        0x82d5                  ; remove rssi "bracket"
+.ORG        0x82ef                  ; remove rssi "bracket"
     LJMP    rssiBracket
 
-.ORG        0x82ae                  ; 9 on the meter
+.ORG        0x82c8                  ; 9 on the meter
     LCALL   green9
 
-.ORG        0x8264                  ; vertical location of s-meter numbers sync mode
+.ORG        0x827e                  ; vertical location of s-meter numbers sync mode
     .BYTE   0x05
-.ORG        0x826e                  ; vertical location of s-meter numbers non sync mode
+.ORG        0x8288                  ; vertical location of s-meter numbers non sync mode
     .BYTE   0x05
 
-.ORG        0x5DDA                  ; hook signal level poll function (3 bytes)
+.ORG        0x5DDf                  ; hook signal level poll function (3 bytes)
     LJMP    rssiDetour              ; Original code: 90 02 f5   MOV     DPTR,#0x2f5
-.ORG        0x5dea
+.ORG        0x5def
 resumeRssiDetour:
-.ORG        0x5e40
+.ORG        0x5e45
 rssiNoSignal:
 
-.ORG        0xEAB8                  ; Serial send byte function, byte to send in R7
+.ORG        0xEAd2                  ; Serial send byte function, byte to send in R7
 sendSerialByte:
 
 .ORG        0x0122
     .BYTE   0x31, 0, 0x33, 0, 0x35, 0, 0x37, 0, 0x39, 0, 0x34, 0x30, 0x2b, 0
-.ORG        0x8276
-    mov     r5, #0x04
-.ORG        0x8282
-    mov     r5, #0x16
 .ORG        0x8290
+    mov     r5, #0x04
+.ORG        0x829c
+    mov     r5, #0x16
+.ORG        0x82aa
     mov     r5, #0x28
-.ORG        0x829e
+.ORG        0x82b8
     mov     r5, #0x3a
-.ORG        0x82ac
+.ORG        0x82c6
     mov     r5, #0x4c
-.ORG        0x82c3
+.ORG        0x82dd
     mov     r5, #0x5f
 
 .ORG        0x2d12
@@ -81,32 +75,32 @@ sendSerialByte:
 .ORG        0x4ac0
     .byte   0xd1
 
-.ORG        0x4f3a
+.ORG        0x4f3f
     .byte   0x0a
-.ORG        0x4f3c
+.ORG        0x4f41
     .byte   0xd1
 
-.ORG        0x6cfc
+.ORG        0x6d0b
     .byte   0x0a
-.ORG        0x6cfe
+.ORG        0x6d0d
     .byte   0xd1
 
-.ORG        0x7931
+.ORG        0x7940
     .byte   0x0a
-.ORG        0x7933
+.ORG        0x7942
     .byte   0xd1
 
 
-.org        0xd242                  ; read eeprom function address
+.org        0xd25c                  ; read eeprom function address
 readEeprom:
     ljmp    readEepromHook
     nop
 readEepromResume:
 
-.ORG        0xd8d7                  ; write eeprom function address
+.ORG        0xd8f1                  ; write eeprom function address
 writeEeprom:
 
-.ORG        0x6dca                  ; button scanner
+.ORG        0x6dd9                  ; button scanner
     LJMP   buttonScanner
 buttonScannerResume:
 
@@ -125,59 +119,64 @@ buttonScannerResume:
 ;1A = PTT (small)
 
 
-.ORG        0xd0db                  ; menu mode key press
+.ORG        0xd0f5                  ; menu mode key press
     LCALL   menuKey
 
-.ORG        0x618d                  ; vfo mode key press
+.ORG        0x619c                  ; vfo mode key press
     LCALL   vfoKey
 
 .ORG        0x2a39
-    LJMP    fineStepHook
-    NOP
 fineStepResume:
 
-.ORG        0x2311
-    pop     b
-    pop     b
-    pop     b
-    pop     b
-    ret
-
-.ORG        0xEFE0                  ; start of mod code
-
-
-fineStepHook:
-    push    acc
-    mov     dptr, #0x702
-    movx    a, @dptr
-    jz      noFineStep
-    pop     b
-    dec     a
-    mov     b, #4
-    mul     ab
-    mov     b, a
-    mov     dptr, #fineSteps
-    mov     a, dpl
-    clr     C
-    addc    a, b
-    mov     dpl, a
-    mov     a, #0
-    addc    a, dph
-    mov     dph, a
-    ret
-noFineStep:
-    pop     acc
-    .byte   0x25, 0xe0, 0x25, 0xe0
-    LJMP    fineStepResume
+.ORG        0xEFFA                  ; start of mod code
 
 fineSteps:
-    .byte   0,0,0,250
+    .byte   0,0,0,1
     .byte   0,0,0,2
     .byte   0,0,0,5
     .byte   0,0,0,10
     .byte   0,0,0,25
     .byte   0,0,0,50
     .byte   0,0,0,100
+
+getRegSafe:
+    mov     dptr, #0x2f5
+    movx    a, @dptr
+    push    acc
+    inc     dptr
+    movx    a, @dptr
+    push    acc
+    mov     dptr, #0x2c3
+    movx    a, @dptr
+    push    acc
+    mov     dptr, #0x2e5
+    movx    a, @dptr
+    push    acc
+    LCALL   getReg
+    mov     dptr, #0x2f5
+    movx    a, @dptr
+    mov     r7, a
+    inc     dptr
+    movx    a, @dptr
+    mov     r5, a
+    mov     dptr, #0x2e5
+    pop     acc
+    movx    @dptr, a
+    mov     dptr, #0x2c3
+    pop     acc
+    movx    @dptr, a
+    mov     dptr, #0x2f6
+    pop     acc
+    movx    @dptr, a
+    mov     dptr, #0x2f5
+    pop     acc
+    movx    @dptr, a
+    ret
+
+
+
+
+
 
 rssiBracket:
     mov     0x50, #0xff
@@ -920,23 +919,23 @@ rssiBar:
    MOV     0x4e,R5              
    MOV     0x4f,R3              
    MOV     R7,#0x2a
-   LCALL   0xee70                     
+   LCALL   0xee8a  ;                   
    MOV     A,0x4d                   
    ADD     A,#0x20
    MOV     R7,A
-   LCALL   0xef22                     
+   LCALL   0xef3c ;                     
    MOV     A,0x4d                   
    ADD     A,#0x20
    MOV     R7,A
-   LCALL   0xef22                     
+   LCALL   0xef3c ;                     
    MOV     R7,#0x2b
-   LCALL   0xee70                     
+   LCALL   0xee8a ;                     
    MOV     R7,0x4e             
-   LCALL   0xef22                     
+   LCALL   0xef3c ;                     
    MOV     R7,0x4e             
-   LCALL   0xef22                     
+   LCALL   0xef3c ;                     
    MOV     R7,#0x2c
-   LCALL   0xee70                     
+   LCALL   0xee8a ;                     
    CLR     A
    MOV     0x52,A       
 LAB_CODE_d475:                   
@@ -973,7 +972,7 @@ isRed:
    mov     r7, #0xff
    mov     r5, #0x08
 drawDot:
-   LCALL   0xecab                     
+   LCALL   0xecc5 ;                     
    INC     0x53                     
    SJMP    LAB_CODE_d47f
 LAB_CODE_d491:                       
