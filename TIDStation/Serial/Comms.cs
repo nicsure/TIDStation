@@ -585,7 +585,7 @@ namespace TIDStation.Serial
         private static readonly int[] mbytes = new int[3];
         private static int byte3 = 0;
         private static int extMemCnt = 0;
-        private static bool lastdebug = false;
+        private static int lastdebug = 0;
         private static void Received(byte[] data)
         {
             foreach (byte b in data)
@@ -596,7 +596,7 @@ namespace TIDStation.Serial
                         mbytes[byte3] = b;
                         if (++byte3 >= 3)
                         {
-                            Debug.WriteLine($"Reg:{mbytes[0]:X2} B1:{mbytes[1]:X2} B2:{mbytes[2]:X2} ");
+                            Debug.WriteLine($"0x{mbytes[0]:X2}, 0x{mbytes[1]:X2}, 0x{mbytes[2]:X2},");
                             state = 0;
                         }
                         break;
@@ -610,11 +610,10 @@ namespace TIDStation.Serial
                         }
                         break;
                     case 99: // radio debug
-                        //if (b != lastdebug)
+                        if (b != lastdebug)
                         {
-                            Debug.WriteLine($"Radio Debug Byte: {(lastdebug ? "R7":"R6")} {b:X2}");
-                            lastdebug = !lastdebug;
-                            if (!lastdebug) Debug.WriteLine(string.Empty);
+                            Debug.WriteLine($"Radio Debug Byte: {b:X2}");
+                            lastdebug = b;
                         }
                         state = 0;
                         break;
