@@ -111,10 +111,10 @@ nop
 nop
 nop
 
-.org 0x8a94
-    setb p3.5
-halt:
-sjmp halt
+;.org 0x8a94
+;    setb p3.5
+;halt:
+;sjmp halt
 
 ;ID    KEY
 ; 0 = no key
@@ -735,12 +735,25 @@ notMiddle:
     lcall   addStepScan
     ajmp    drawScope
 
-.ORG        0xd099                  ; hook to capture battery level
-    LCALL   captureBattLevel
-    NOP
+.org 0xe42b
+ljmp 0
 
-.ORG        0xddb6                  ; routine that draws the battery icon
-    lcall   battLevel
+
+.org 0x8ab6
+    lcall    battTest
+
+.org 0xdf28
+    reti
+
+.org 0x7163
+    reti
+
+;.ORG        0xd099                  ; hook to capture battery level
+;    LCALL   captureBattLevel
+;    NOP
+
+;.ORG        0xddb6                  ; routine that draws the battery icon
+;    lcall   battLevel
 
 .org        0xf7ff                  ; end byte for overlap detection
     .byte   0
@@ -954,15 +967,41 @@ printDigit:                         ; a=digit, xm0x900=y, r5=x
     LCALL   printRegularText
     ret
 
-captureBattLevel:
-    .byte   0xe5, 0x0e              ; mov a, bank1_r6
-    MOV     DPTR, #0xA06
-    MOVX    @DPTR, A
-    .byte   0xe5, 0x0f              ; mov a, bank1_r7
-    MOV     DPTR, #0xA07
-    MOVX    @DPTR, A
-    SUBB    A, #0x22
-    ret
+battTest:
+    LCALL   0xdb26 ; init Serial
+    .byte   0xc2, 0xaf ; clrb ea
+
+    .byte   0xd2, 0xb3 ; setb int1
+
+battLoop1:
+    lcall   0xef94
+
+    .byte   0x43, 0xdf, 0x02   ;ORL     PCON1,#0x2                         = ??
+
+    mov     r7, #0x91
+    lcall   sendSerialByte
+
+    mov     a, 0xdd
+    mov     r7, a
+    lcall   sendSerialByte
+
+    mov     a, 0xdc
+    mov     r7, a
+    lcall   sendSerialByte
+
+    sjmp    battLoop1
+
+
+
+;captureBattLevel:
+;    .byte   0xe5, 0x0e              ; mov a, bank1_r6
+;    MOV     DPTR, #0xA06
+;    MOVX    @DPTR, A
+;    .byte   0xe5, 0x0f              ; mov a, bank1_r7
+;    MOV     DPTR, #0xA07
+;    MOVX    @DPTR, A
+;    SUBB    A, #0x22
+;    ret
 
 fineStepDetour:
     push    acc

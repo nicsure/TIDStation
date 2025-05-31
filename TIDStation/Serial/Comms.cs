@@ -586,6 +586,7 @@ namespace TIDStation.Serial
         private static int byte3 = 0;
         private static int extMemCnt = 0;
         private static int lastdebug = 0;
+        private static int delayer = 0;
         private static void Received(byte[] data)
         {
             foreach (byte b in data)
@@ -596,7 +597,11 @@ namespace TIDStation.Serial
                         mbytes[byte3] = b;
                         if (++byte3 >= 3)
                         {
-                            Debug.WriteLine($"0x{mbytes[0]:X2}, 0x{mbytes[1]:X2}, 0x{mbytes[2]:X2},");
+                            //if (mbytes[0]==0x46 || mbytes[0]==0x79)
+                            {
+                                delayer = 0;
+                                Debug.WriteLine($"0x{mbytes[0]:X2}, 0x{mbytes[1]:X2}, 0x{mbytes[2]:X2}");
+                            }
                             state = 0;
                         }
                         break;
@@ -610,9 +615,17 @@ namespace TIDStation.Serial
                         }
                         break;
                     case 99: // radio debug
-                        if (b != lastdebug)
+                        //if (b != lastdebug)
                         {
-                            Debug.WriteLine($"Radio Debug Byte: {b:X2}");
+                            Debug.WriteLine($"I2C Send: {b:X2}");
+                            lastdebug = b;
+                        }
+                        state = 0;
+                        break;
+                    case 98: // radio debug
+                        //if (b != lastdebug)
+                        {
+                            Debug.WriteLine($"I2C Read: {b:X2}");
                             lastdebug = b;
                         }
                         state = 0;
@@ -686,6 +699,9 @@ namespace TIDStation.Serial
                                 break;
                             case 0x99: // radio debug
                                 state = 99;
+                                break;
+                            case 0x98: // radio debug 2
+                                state = 98;
                                 break;
                             case 0x9a: // read all ext mem
                                 state = 100;
